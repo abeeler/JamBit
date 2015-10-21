@@ -35,6 +35,7 @@
             this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
             this.prgVolume = new MusicPlayerControlsLibrary.SlidableProgressBar();
             this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
+            this.btnOpen = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lblCurrentTime
@@ -70,7 +71,7 @@
             // 
             // btnPause
             // 
-            this.btnPause.Location = new System.Drawing.Point(197, 83);
+            this.btnPause.Location = new System.Drawing.Point(106, 83);
             this.btnPause.Name = "btnPause";
             this.btnPause.Size = new System.Drawing.Size(75, 23);
             this.btnPause.TabIndex = 8;
@@ -112,11 +113,22 @@
             this.prgSongTime.TabIndex = 3;
             this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelecedValue);
             // 
+            // btnOpen
+            // 
+            this.btnOpen.Location = new System.Drawing.Point(197, 83);
+            this.btnOpen.Name = "btnOpen";
+            this.btnOpen.Size = new System.Drawing.Size(75, 23);
+            this.btnOpen.TabIndex = 10;
+            this.btnOpen.Text = "Open";
+            this.btnOpen.UseVisualStyleBackColor = true;
+            this.btnOpen.Click += new System.EventHandler(this.btnOpen_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btnOpen);
             this.Controls.Add(this.lblSongInformation);
             this.Controls.Add(this.btnPause);
             this.Controls.Add(this.btnPlay);
@@ -139,6 +151,7 @@
         private System.Windows.Forms.Button btnPlay;
         private System.Windows.Forms.Button btnPause;
         private MusicPlayerControlsLibrary.MarqueeLabel lblSongInformation;
+        private System.Windows.Forms.Button btnOpen;
     }
 }
 

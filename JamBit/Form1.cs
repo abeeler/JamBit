@@ -13,10 +13,16 @@ namespace JamBit
     public partial class Form1 : Form
     {
         private Timer checkTime;
+        private OpenFileDialog openFileDialog;
 
         public Form1()
         {
             InitializeComponent();
+
+            openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "MP3|*.mp3|" +
+                "Music Files|*.mp3";
+            openFileDialog.FileOk += openFileDialog_OnFileOk;
 
             checkTime = new Timer();
             checkTime.Interval = 1000;
@@ -77,6 +83,18 @@ namespace JamBit
         {
             checkTime.Stop();
             MusicPlayer.PauseSong();
+        }
+
+        private void btnOpen_Click(object sender, EventArgs e)
+        {
+            openFileDialog.ShowDialog();
+        }
+
+        private void openFileDialog_OnFileOk(object sender, CancelEventArgs e)
+        {
+            lblSongInformation.CycleText = new string[] { openFileDialog.FileName };
+            MusicPlayer.OpenSong(openFileDialog.FileName);
+            RefreshPlayer();
         }
     }
 }
