@@ -13,6 +13,8 @@ namespace JamBit
         private static extern long mciSendString(string lpstrCommand, StringBuilder lpstrReturnString, int uReturnLength, int hwndCallback);
         private static int returnVal;
         private static StringBuilder returnData = new StringBuilder();
+
+        private static int currentVolume = 500;
         public static Song curSong;
 
         public static void OpenSong(string fileName) {
@@ -26,8 +28,10 @@ namespace JamBit
         public static void OpenSong(Song song)
         {
             curSong = song;
+            mciSendString("close curSong", null, 0, 0);
             mciSendString("open \"" + song.FileName + "\" type MPEGVideo alias curSong", null, 0, 0);
-            mciSendString("play curSong", null, 0, 0);
+            mciSendString("setaudio curSong volume to " + currentVolume, null, 0, 0);
+            PlaySong();
         }
 
         public static void PlaySong()
@@ -78,6 +82,7 @@ namespace JamBit
                 volume = 0;
             if (volume > 1000)
                 volume = 1000;
+            currentVolume = volume;
             mciSendString("setaudio curSong volume to " + volume, null, 0, 0);
         }
     }
