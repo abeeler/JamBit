@@ -1,8 +1,10 @@
-﻿using System;
+﻿using SQLite;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,12 +16,40 @@ namespace JamBit
     {
         private Timer checkTime;
         private OpenFileDialog openFileDialog;
+        private SQLite.SQLiteConnection db;
+        private RepeatMode playMode = RepeatMode.Loop;
+        private Playlist currentPlaylist;
+        private int playlistIndex = 1;
+
+        enum RepeatMode { None, Loop, Repeat, Shuffle }
 
         public Form1()
         {
             InitializeComponent();
 
+            db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
+            db.BeginTransaction();
+            //db.DropTable<Song>();
+            db.CreateTable<Song>();
+            db.Commit();
+
+            currentPlaylist = new Playlist();
+            foreach (Song s in db.Table<Song>())
+            {
+                currentPlaylist.Songs.Add(s);
+                lstPlaylist.Items.Add(new ListViewItem(new string[] {
+                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                }));
+            }
+
+            if (db.Table<Song>().Count() > 0)
+            {
+                MusicPlayer.OpenSong(db.Table<Song>().First());
+                RefreshPlayer();
+            }
+
             openFileDialog = new OpenFileDialog();
+            openFileDialog.Multiselect = true;
             openFileDialog.Filter = "MP3|*.mp3|" +
                 "Music Files|*.mp3";
             openFileDialog.FileOk += openFileDialog_OnFileOk;
@@ -27,10 +57,7 @@ namespace JamBit
             checkTime = new Timer();
             checkTime.Interval = 1000;
             checkTime.Tick += new System.EventHandler(checkTime_Tick);
-            checkTime.Start();
-            MusicPlayer.OpenSong("C:/song.mp3");
-            MusicPlayer.SetVolume(prgVolume.Value);
-            RefreshPlayer();
+            
         }
 
         private void RefreshPlayer()
@@ -55,8 +82,13 @@ namespace JamBit
             
             if (seconds >= MusicPlayer.curSong.Length)
             {
-                MusicPlayer.SeekTo(0);
-                MusicPlayer.PlaySong();
+                switch(playMode)
+                {
+                    case RepeatMode.Loop:
+                        if (playlistIndex == currentPlaylist.Count) playlistIndex = 0;
+                        MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
+                        break;
+                }
                 RefreshPlayer();
             }
         }
@@ -75,8 +107,11 @@ namespace JamBit
 
         private void btnPlay_Click(object sender, EventArgs e)
         {
-            checkTime.Start();
-            MusicPlayer.PlaySong();
+            if (MusicPlayer.curSong != null)
+            {
+                checkTime.Start();
+                MusicPlayer.PlaySong();
+            }
         }
 
         private void btnPause_Click(object sender, EventArgs e)
@@ -95,6 +130,54 @@ namespace JamBit
             lblSongInformation.CycleText = new string[] { openFileDialog.FileName };
             MusicPlayer.OpenSong(openFileDialog.FileName);
             RefreshPlayer();
+
+            db.BeginTransaction();
+            foreach (string fileName in openFileDialog.FileNames)
+            {
+                Song s = new Song(fileName);
+                try { db.Get<Song>(s.Checksum); }
+                catch (System.InvalidOperationException) {
+                    currentPlaylist.Songs.Add(s);
+                    lstPlaylist.Items.Add(s.Data.Tag.Title);
+                    db.Insert(s);
+                }
+                s.Data.Dispose();
+            }
+            db.Commit();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            db.Dispose();
+        }
+
+        private void btnNext_Click(object sender, EventArgs e)
+        {
+            if (currentPlaylist.Count > 0) {
+                if (playlistIndex == currentPlaylist.Count) playlistIndex = 0;
+                MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
+                RefreshPlayer();
+            }
+        }
+
+        private void btnPrevious_Click(object sender, EventArgs e)
+        {
+            if (currentPlaylist.Count > 0)
+            {
+                playlistIndex = playlistIndex == 1 ? currentPlaylist.Count : playlistIndex - 1;
+                MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex - 1]);
+                RefreshPlayer();
+            }
+        }
+
+        private void lstPlaylist_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lstPlaylist.SelectedIndices.Count == 1)
+            {
+                playlistIndex = lstPlaylist.SelectedIndices[0];
+                MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
+                RefreshPlayer();
+            }
         }
     }
 }

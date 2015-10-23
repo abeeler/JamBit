@@ -27,11 +27,13 @@ namespace JamBit
         }
         public static void OpenSong(Song song)
         {
+            bool willPlay = curSong != null && CurrentlyPlaying();
             curSong = song;
             mciSendString("close curSong", null, 0, 0);
             mciSendString("open \"" + song.FileName + "\" type MPEGVideo alias curSong", null, 0, 0);
             mciSendString("setaudio curSong volume to " + currentVolume, null, 0, 0);
-            PlaySong();
+
+            if (willPlay) PlaySong();
         }
 
         public static void PlaySong()
