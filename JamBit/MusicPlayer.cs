@@ -4,15 +4,18 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace JamBit
 {
     class MusicPlayer
     {
         [DllImport("winmm.dll")]
-        private static extern long mciSendString(string lpstrCommand, StringBuilder lpstrReturnString, int uReturnLength, int hwndCallback);
+        private static extern int mciSendString(string lpstrCommand, StringBuilder lpstrReturnString, int uReturnLength, int hwndCallback);
+        [DllImport("winmm.dll")]
+        private static extern int mciGetErrorString(int errorVal, StringBuilder lpstrReturnString, int uReturnLength);
         private static int returnVal;
-        private static StringBuilder returnData = new StringBuilder();
+        private static StringBuilder returnData = new StringBuilder(128);
 
         private static int currentVolume = 500;
         public static Song curSong;
@@ -28,11 +31,15 @@ namespace JamBit
         public static void OpenSong(Song song)
         {
             bool willPlay = curSong != null && CurrentlyPlaying();
-            curSong = song;
-            mciSendString("close curSong", null, 0, 0);
-            mciSendString("open \"" + song.FileName + "\" type MPEGVideo alias curSong", null, 0, 0);
-            mciSendString("setaudio curSong volume to " + currentVolume, null, 0, 0);
+            if (curSong != null)
+                mciSendString("close curSong", null, 0, 0);
+            
+            returnVal = mciSendString("open \"" + song.FileName + "\" type MPEGVideo alias curSong", null, 0, 0);
+            mciGetErrorString(returnVal, returnData, returnData.Capacity);
+            MessageBox.Show(returnData.ToString());
+            returnVal = mciSendString("setaudio curSong volume to " + currentVolume, null, 0, 0);
 
+            curSong = song;
             if (willPlay) PlaySong();
         }
 
@@ -48,8 +55,9 @@ namespace JamBit
 
         public static bool CurrentlyPlaying()
         {
-            mciSendString("status curSong mode", returnData, returnData.Capacity, 0);
-            return returnData.ToString().Substring(0, 7) == "playing";
+            if (curSong == null) return false;
+            returnVal = mciSendString("status curSong mode", returnData, returnData.Capacity, 0);
+            return returnData.ToString().Length > 0 && returnData.ToString().Substring(0, 7) == "playing";
         }
 
         public static void SeekTo(int seconds)

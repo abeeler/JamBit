@@ -1,6 +1,6 @@
 ﻿namespace JamBit
 {
-    partial class Form1
+    partial class JamBitForm
     {
         /// <summary>
         /// Required designer variable.
@@ -42,12 +42,18 @@
             this.clmAlbum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnPrevious = new System.Windows.Forms.Button();
             this.btnNext = new System.Windows.Forms.Button();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuPrefLibFolders = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblCurrentTime
             // 
             this.lblCurrentTime.AutoSize = true;
-            this.lblCurrentTime.Location = new System.Drawing.Point(12, 39);
+            this.lblCurrentTime.Location = new System.Drawing.Point(12, 44);
             this.lblCurrentTime.Name = "lblCurrentTime";
             this.lblCurrentTime.Size = new System.Drawing.Size(28, 13);
             this.lblCurrentTime.TabIndex = 5;
@@ -56,18 +62,18 @@
             // 
             // lblSongLength
             // 
-            this.lblSongLength.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblSongLength.AutoSize = true;
-            this.lblSongLength.Location = new System.Drawing.Point(244, 39);
+            this.lblSongLength.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.lblSongLength.Location = new System.Drawing.Point(238, 44);
             this.lblSongLength.Name = "lblSongLength";
-            this.lblSongLength.Size = new System.Drawing.Size(28, 13);
+            this.lblSongLength.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.lblSongLength.Size = new System.Drawing.Size(34, 13);
             this.lblSongLength.TabIndex = 6;
             this.lblSongLength.Text = "0:00";
             this.lblSongLength.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // btnPlay
             // 
-            this.btnPlay.Location = new System.Drawing.Point(15, 83);
+            this.btnPlay.Location = new System.Drawing.Point(12, 88);
             this.btnPlay.Name = "btnPlay";
             this.btnPlay.Size = new System.Drawing.Size(75, 23);
             this.btnPlay.TabIndex = 7;
@@ -77,7 +83,7 @@
             // 
             // btnPause
             // 
-            this.btnPause.Location = new System.Drawing.Point(106, 83);
+            this.btnPause.Location = new System.Drawing.Point(104, 88);
             this.btnPause.Name = "btnPause";
             this.btnPause.Size = new System.Drawing.Size(75, 23);
             this.btnPause.TabIndex = 8;
@@ -92,7 +98,7 @@
             this.lblSongInformation.CycleText = new string[] {
         " "};
             this.lblSongInformation.LabelSpeed = 30;
-            this.lblSongInformation.Location = new System.Drawing.Point(15, 9);
+            this.lblSongInformation.Location = new System.Drawing.Point(12, 24);
             this.lblSongInformation.Margin = new System.Windows.Forms.Padding(0);
             this.lblSongInformation.Name = "lblSongInformation";
             this.lblSongInformation.PauseLength = 2500;
@@ -101,10 +107,10 @@
             // 
             // prgVolume
             // 
-            this.prgVolume.Location = new System.Drawing.Point(15, 357);
+            this.prgVolume.Location = new System.Drawing.Point(12, 386);
             this.prgVolume.Maximum = 1000;
             this.prgVolume.Name = "prgVolume";
-            this.prgVolume.Size = new System.Drawing.Size(254, 14);
+            this.prgVolume.Size = new System.Drawing.Size(260, 14);
             this.prgVolume.Step = 0;
             this.prgVolume.TabIndex = 4;
             this.prgVolume.Value = 500;
@@ -112,7 +118,7 @@
             // 
             // prgSongTime
             // 
-            this.prgSongTime.Location = new System.Drawing.Point(52, 34);
+            this.prgSongTime.Location = new System.Drawing.Point(52, 39);
             this.prgSongTime.Maximum = 1000;
             this.prgSongTime.Name = "prgSongTime";
             this.prgSongTime.Size = new System.Drawing.Size(180, 23);
@@ -122,7 +128,7 @@
             // 
             // btnOpen
             // 
-            this.btnOpen.Location = new System.Drawing.Point(197, 83);
+            this.btnOpen.Location = new System.Drawing.Point(197, 88);
             this.btnOpen.Name = "btnOpen";
             this.btnOpen.Size = new System.Drawing.Size(75, 23);
             this.btnOpen.TabIndex = 10;
@@ -140,10 +146,10 @@
             this.lstPlaylist.FullRowSelect = true;
             this.lstPlaylist.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lstPlaylist.HideSelection = false;
-            this.lstPlaylist.Location = new System.Drawing.Point(15, 141);
+            this.lstPlaylist.Location = new System.Drawing.Point(12, 146);
             this.lstPlaylist.MultiSelect = false;
             this.lstPlaylist.Name = "lstPlaylist";
-            this.lstPlaylist.Size = new System.Drawing.Size(254, 210);
+            this.lstPlaylist.Size = new System.Drawing.Size(260, 210);
             this.lstPlaylist.TabIndex = 11;
             this.lstPlaylist.UseCompatibleStateImageBehavior = false;
             this.lstPlaylist.View = System.Windows.Forms.View.Details;
@@ -166,7 +172,7 @@
             // 
             // btnPrevious
             // 
-            this.btnPrevious.Location = new System.Drawing.Point(52, 112);
+            this.btnPrevious.Location = new System.Drawing.Point(52, 117);
             this.btnPrevious.Name = "btnPrevious";
             this.btnPrevious.Size = new System.Drawing.Size(75, 23);
             this.btnPrevious.TabIndex = 12;
@@ -176,7 +182,7 @@
             // 
             // btnNext
             // 
-            this.btnNext.Location = new System.Drawing.Point(157, 112);
+            this.btnNext.Location = new System.Drawing.Point(157, 117);
             this.btnNext.Name = "btnNext";
             this.btnNext.Size = new System.Drawing.Size(75, 23);
             this.btnNext.TabIndex = 13;
@@ -184,11 +190,52 @@
             this.btnNext.UseVisualStyleBackColor = true;
             this.btnNext.Click += new System.EventHandler(this.btnNext_Click);
             // 
-            // Form1
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem,
+            this.preferencesToolStripMenuItem});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(284, 24);
+            this.menuStrip1.TabIndex = 14;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuFileOpen});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.fileToolStripMenuItem.Text = "File";
+            // 
+            // preferencesToolStripMenuItem
+            // 
+            this.preferencesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuPrefLibFolders});
+            this.preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
+            this.preferencesToolStripMenuItem.Size = new System.Drawing.Size(80, 20);
+            this.preferencesToolStripMenuItem.Text = "Preferences";
+            // 
+            // mnuPrefLibFolders
+            // 
+            this.mnuPrefLibFolders.Name = "mnuPrefLibFolders";
+            this.mnuPrefLibFolders.Size = new System.Drawing.Size(152, 22);
+            this.mnuPrefLibFolders.Text = "Library Folders";
+            this.mnuPrefLibFolders.Click += new System.EventHandler(this.mnuPrefLibFolders_Click);
+            // 
+            // mnuFileOpen
+            // 
+            this.mnuFileOpen.Name = "mnuFileOpen";
+            this.mnuFileOpen.Size = new System.Drawing.Size(152, 22);
+            this.mnuFileOpen.Text = "Open";
+            this.mnuFileOpen.Click += new System.EventHandler(this.mnuFileOpen_Click);
+            // 
+            // JamBitForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 383);
+            this.ClientSize = new System.Drawing.Size(284, 412);
             this.Controls.Add(this.btnNext);
             this.Controls.Add(this.btnPrevious);
             this.Controls.Add(this.lstPlaylist);
@@ -200,9 +247,13 @@
             this.Controls.Add(this.lblCurrentTime);
             this.Controls.Add(this.prgVolume);
             this.Controls.Add(this.prgSongTime);
-            this.Name = "Form1";
-            this.Text = "Form1";
+            this.Controls.Add(this.menuStrip1);
+            this.MainMenuStrip = this.menuStrip1;
+            this.Name = "JamBitForm";
+            this.Text = "JamBit";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -223,6 +274,11 @@
         private System.Windows.Forms.ColumnHeader clmAlbum;
         private System.Windows.Forms.Button btnPrevious;
         private System.Windows.Forms.Button btnNext;
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem mnuFileOpen;
+        private System.Windows.Forms.ToolStripMenuItem preferencesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem mnuPrefLibFolders;
     }
 }
 

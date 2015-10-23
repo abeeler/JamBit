@@ -12,7 +12,7 @@ using System.Windows.Forms;
 
 namespace JamBit
 {
-    public partial class Form1 : Form
+    public partial class JamBitForm : Form
     {
         private Timer checkTime;
         private OpenFileDialog openFileDialog;
@@ -20,16 +20,18 @@ namespace JamBit
         private RepeatMode playMode = RepeatMode.Loop;
         private Playlist currentPlaylist;
         private int playlistIndex = 1;
+        private string folderToScan;
+        private BackgroundWorker libraryScanner;
 
         enum RepeatMode { None, Loop, Repeat, Shuffle }
 
-        public Form1()
+        public JamBitForm()
         {
             InitializeComponent();
 
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
             db.BeginTransaction();
-            //db.DropTable<Song>();
+            db.DropTable<Song>();
             db.CreateTable<Song>();
             db.Commit();
 
@@ -54,6 +56,12 @@ namespace JamBit
                 "Music Files|*.mp3";
             openFileDialog.FileOk += openFileDialog_OnFileOk;
 
+            libraryScanner = new BackgroundWorker();
+            libraryScanner.WorkerReportsProgress = true;
+            libraryScanner.WorkerSupportsCancellation = true;
+            libraryScanner.DoWork += libraryScanner_DoWork;
+            libraryScanner.ProgressChanged += libraryScanner_ProgressChanged;
+
             checkTime = new Timer();
             checkTime.Interval = 1000;
             checkTime.Tick += new System.EventHandler(checkTime_Tick);
@@ -75,7 +83,8 @@ namespace JamBit
 
         private void checkTime_Tick(object sender, EventArgs e)
         {
-            int seconds = (int)(long.Parse(MusicPlayer.CurrentTime()) / 1000);
+            string time = MusicPlayer.CurrentTime();
+            int seconds = time.Length > 0 ? (int)(long.Parse(time) / 1000) : 0;
             lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
 
             prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
@@ -133,16 +142,7 @@ namespace JamBit
 
             db.BeginTransaction();
             foreach (string fileName in openFileDialog.FileNames)
-            {
-                Song s = new Song(fileName);
-                try { db.Get<Song>(s.Checksum); }
-                catch (System.InvalidOperationException) {
-                    currentPlaylist.Songs.Add(s);
-                    lstPlaylist.Items.Add(s.Data.Tag.Title);
-                    db.Insert(s);
-                }
-                s.Data.Dispose();
-            }
+                AddSong(fileName);
             db.Commit();
         }
 
@@ -178,6 +178,62 @@ namespace JamBit
                 MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
                 RefreshPlayer();
             }
+        }
+
+        private void mnuFileOpen_Click(object sender, EventArgs e)
+        {
+            btnOpen_Click(sender, e);
+        }
+
+        private void mnuPrefLibFolders_Click(object sender, EventArgs e)
+        {
+            new OptionsForm(this).Show();
+        }
+
+        public void AddSong(string fileName)
+        {
+            Song s = new Song(fileName);
+            try { db.Get<Song>(s.Checksum); }
+            catch (System.InvalidOperationException)
+            {
+                currentPlaylist.Songs.Add(s);
+                lstPlaylist.Items.Add(new ListViewItem(new string[] {
+                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                }));
+                db.Insert(s);
+            }
+            s.Data.Dispose();
+        }
+
+        public void StartScan(string folderPath)
+        {
+            folderToScan = folderPath;
+            libraryScanner.RunWorkerAsync();
+        }
+
+        public void libraryScanner_DoWork(object sender, DoWorkEventArgs e)
+        {
+            foreach (string file in Directory.GetFiles(folderToScan, "*.mp3", SearchOption.AllDirectories))
+            {
+                Song s = new Song(file);
+                try { db.Get<Song>(s.Checksum); }
+                catch (System.InvalidOperationException)
+                {
+                    libraryScanner.ReportProgress(0, new Song(file));
+                }
+                s.Data.Dispose();
+            }
+        }
+
+        public void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            Song s = (Song)e.UserState;
+            currentPlaylist.Songs.Add(s);
+            lstPlaylist.Items.Add(new ListViewItem(new string[] {
+                s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+            }));
+            db.Insert(s);
+            s.Data.Dispose();
         }
     }
 }
