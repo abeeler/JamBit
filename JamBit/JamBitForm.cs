@@ -83,8 +83,7 @@ namespace JamBit
 
         private void checkTime_Tick(object sender, EventArgs e)
         {
-            string time = MusicPlayer.CurrentTime();
-            int seconds = time.Length > 0 ? (int)(long.Parse(time) / 1000) : 0;
+            int seconds = (int)MusicPlayer.CurrentTime();
             lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
 
             prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
@@ -105,7 +104,7 @@ namespace JamBit
         private void prgSongTime_SelecedValue(object sender, EventArgs e)
         {
             MusicPlayer.SeekTo(((int)((double)prgSongTime.Value / 1000 * MusicPlayer.curSong.Length)));
-            int seconds = (int)(long.Parse(MusicPlayer.CurrentTime()) / 1000);
+            int seconds = (int)MusicPlayer.CurrentTime();
             lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
         }
 
