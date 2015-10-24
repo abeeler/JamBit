@@ -27,6 +27,10 @@ namespace JamBit
             libraryFolderDialog.Description = "Select a folder to scan for music files to add to your library.";
             libraryFolderDialog.RootFolder = Environment.SpecialFolder.MyComputer;
             libraryFolderDialog.ShowNewFolderButton = true;
+
+            if (Properties.Settings.Default.LIbraryFolders.Length > 0)
+                foreach (string path in Properties.Settings.Default.LIbraryFolders.Split(';'))
+                    lstLibraryFolders.Items.Add(path);
         }
 
         private void btnAddFolder_Click(object sender, EventArgs e)
@@ -35,6 +39,10 @@ namespace JamBit
             {
                 lstLibraryFolders.Items.Add(libraryFolderDialog.SelectedPath);
                 parent.StartScan(libraryFolderDialog.SelectedPath);
+                if (Properties.Settings.Default.LIbraryFolders.Length > 0)
+                    Properties.Settings.Default.LIbraryFolders += ";";
+                Properties.Settings.Default.LIbraryFolders += libraryFolderDialog.SelectedPath;
+                Properties.Settings.Default.Save();
             }
         }
     }

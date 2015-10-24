@@ -34,5 +34,17 @@ namespace JamBit.Properties {
                 this["PreferredVolume"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LIbraryFolders {
+            get {
+                return ((string)(this["LIbraryFolders"]));
+            }
+            set {
+                this["LIbraryFolders"] = value;
+            }
+        }
     }
 }

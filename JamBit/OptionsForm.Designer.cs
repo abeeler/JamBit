@@ -32,13 +32,14 @@
             this.label1 = new System.Windows.Forms.Label();
             this.btnAddFolder = new System.Windows.Forms.Button();
             this.btnRemoveFolder = new System.Windows.Forms.Button();
+            this.btnScan = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lstLibraryFolders
             // 
             this.lstLibraryFolders.Location = new System.Drawing.Point(12, 35);
             this.lstLibraryFolders.Name = "lstLibraryFolders";
-            this.lstLibraryFolders.Size = new System.Drawing.Size(260, 214);
+            this.lstLibraryFolders.Size = new System.Drawing.Size(260, 185);
             this.lstLibraryFolders.TabIndex = 0;
             this.lstLibraryFolders.UseCompatibleStateImageBehavior = false;
             this.lstLibraryFolders.View = System.Windows.Forms.View.List;
@@ -72,11 +73,21 @@
             this.btnRemoveFolder.Text = "Remove";
             this.btnRemoveFolder.UseVisualStyleBackColor = true;
             // 
+            // btnScan
+            // 
+            this.btnScan.Location = new System.Drawing.Point(12, 226);
+            this.btnScan.Name = "btnScan";
+            this.btnScan.Size = new System.Drawing.Size(260, 23);
+            this.btnScan.TabIndex = 4;
+            this.btnScan.Text = "Scan Now";
+            this.btnScan.UseVisualStyleBackColor = true;
+            // 
             // OptionsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btnScan);
             this.Controls.Add(this.btnRemoveFolder);
             this.Controls.Add(this.btnAddFolder);
             this.Controls.Add(this.label1);
@@ -94,5 +105,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnAddFolder;
         private System.Windows.Forms.Button btnRemoveFolder;
+        private System.Windows.Forms.Button btnScan;
     }
 }
