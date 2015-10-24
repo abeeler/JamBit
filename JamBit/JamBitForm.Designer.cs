@@ -154,7 +154,7 @@
             this.lstPlaylist.TabIndex = 11;
             this.lstPlaylist.UseCompatibleStateImageBehavior = false;
             this.lstPlaylist.View = System.Windows.Forms.View.Details;
-            this.lstPlaylist.SelectedIndexChanged += new System.EventHandler(this.lstPlaylist_SelectedIndexChanged);
+            this.lstPlaylist.DoubleClick += new System.EventHandler(this.lstPlaylist_DoubleClick);
             // 
             // clmTitle
             // 
