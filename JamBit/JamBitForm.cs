@@ -1,5 +1,6 @@
 ﻿using SQLite;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -22,8 +23,8 @@ namespace JamBit
         private RepeatMode playMode = RepeatMode.Loop;
         private Playlist currentPlaylist;
         private int playlistIndex = 1;
-        private string folderToScan;
         private BackgroundWorker libraryScanner;
+        private ConcurrentQueue<string> foldersToScan;
 
         enum RepeatMode { None, Loop, Repeat, Shuffle }
 
@@ -36,6 +37,8 @@ namespace JamBit
             //db.DropTable<Song>();
             db.CreateTable<Song>();
             db.Commit();
+
+            foldersToScan = new ConcurrentQueue<string>();
 
             MusicPlayer.parentForm = this;
             MusicPlayer.SetVolume(Properties.Settings.Default.PreferredVolume);
@@ -194,28 +197,42 @@ namespace JamBit
             s.Data.Dispose();
         }
 
-        public void StartScan(string folderPath)
+        public void LibraryScan(params string[] folderPaths)
         {
-            folderToScan = folderPath;
-            libraryScanner.RunWorkerAsync();
+            foreach (string folder in folderPaths)
+                foldersToScan.Enqueue(folder);
+            if (!libraryScanner.IsBusy)
+                libraryScanner.RunWorkerAsync();
         }
 
         public void libraryScanner_DoWork(object sender, DoWorkEventArgs e)
         {
-            foreach (string file in Directory.GetFiles(folderToScan, "*.mp3", SearchOption.AllDirectories))
+            string folder;
+
+            while (foldersToScan.Count > 0)
             {
-                Song s = new Song(file);
-                try { db.Get<Song>(s.Checksum); }
-                catch (System.InvalidOperationException)
-                {
-                    libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
-                        s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-                    }));
-                    currentPlaylist.Songs.Add(s);
-                    db.Insert(s);
-                }
-                s.Data.Dispose();
-            }
+                Song s = new Song();
+                if (foldersToScan.TryDequeue(out folder))
+                    foreach (string file in Directory.GetFiles(folder, "*.mp3", SearchOption.AllDirectories))
+                    {
+                        try
+                        {
+                            s = new Song(file);
+                            db.Get<Song>(s.Checksum);
+                        }
+                        catch (System.InvalidOperationException)
+                        {
+                            libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
+                                s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                            }));
+                            currentPlaylist.Songs.Add(s);
+                            db.Insert(s);
+                        }
+                        catch (System.IO.PathTooLongException) { }
+                        if (s.Data != null)
+                            s.Data.Dispose();
+                    }
+            }                
         }
 
         public void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)

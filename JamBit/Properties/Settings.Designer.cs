@@ -37,13 +37,12 @@ namespace JamBit.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string LIbraryFolders {
+        public global::System.Collections.Specialized.StringCollection LibraryFolders {
             get {
-                return ((string)(this["LIbraryFolders"]));
+                return ((global::System.Collections.Specialized.StringCollection)(this["LibraryFolders"]));
             }
             set {
-                this["LIbraryFolders"] = value;
+                this["LibraryFolders"] = value;
             }
         }
     }

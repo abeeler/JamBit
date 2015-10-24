@@ -81,6 +81,7 @@
             this.btnScan.TabIndex = 4;
             this.btnScan.Text = "Scan Now";
             this.btnScan.UseVisualStyleBackColor = true;
+            this.btnScan.Click += new System.EventHandler(this.btnScan_Click);
             // 
             // OptionsForm
             // 

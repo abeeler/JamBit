@@ -28,9 +28,11 @@ namespace JamBit
             libraryFolderDialog.RootFolder = Environment.SpecialFolder.MyComputer;
             libraryFolderDialog.ShowNewFolderButton = true;
 
-            if (Properties.Settings.Default.LIbraryFolders.Length > 0)
-                foreach (string path in Properties.Settings.Default.LIbraryFolders.Split(';'))
+            if (Properties.Settings.Default.LibraryFolders != null)
+                foreach (string path in Properties.Settings.Default.LibraryFolders.Cast<string>())
                     lstLibraryFolders.Items.Add(path);
+            else
+                Properties.Settings.Default.LibraryFolders = new System.Collections.Specialized.StringCollection();
         }
 
         private void btnAddFolder_Click(object sender, EventArgs e)
@@ -38,12 +40,16 @@ namespace JamBit
             if (libraryFolderDialog.ShowDialog() == DialogResult.OK)
             {
                 lstLibraryFolders.Items.Add(libraryFolderDialog.SelectedPath);
-                parent.StartScan(libraryFolderDialog.SelectedPath);
-                if (Properties.Settings.Default.LIbraryFolders.Length > 0)
-                    Properties.Settings.Default.LIbraryFolders += ";";
-                Properties.Settings.Default.LIbraryFolders += libraryFolderDialog.SelectedPath;
+                parent.LibraryScan(libraryFolderDialog.SelectedPath);
+                Properties.Settings.Default.LibraryFolders.Add(libraryFolderDialog.SelectedPath);
                 Properties.Settings.Default.Save();
             }
+        }
+
+        private void btnScan_Click(object sender, EventArgs e)
+        {
+            foreach (string folder in Properties.Settings.Default.LibraryFolders.Cast<string>())
+                parent.LibraryScan(folder);
         }
     }
 }
