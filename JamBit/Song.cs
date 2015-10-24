@@ -47,7 +47,7 @@ namespace JamBit
 
         // TODO: Determine why length is off
         [Ignore]
-        public int Length { get { return (int)(Data.Properties.Duration.TotalMilliseconds / 1000) - 1; } }
+        public double Length { get { return Data.Properties.Duration.TotalSeconds; } }
 
         public Song() { }
 

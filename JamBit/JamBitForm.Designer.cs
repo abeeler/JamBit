@@ -125,7 +125,7 @@
             this.prgSongTime.Step = 0;
             this.prgSongTime.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.prgSongTime.TabIndex = 3;
-            this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelecedValue);
+            this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelectedValue);
             // 
             // btnOpen
             // 

@@ -62,7 +62,7 @@ namespace JamBit
             return player.playState == WMPPlayState.wmppsPlaying;
         }
 
-        public static void SeekTo(int seconds)
+        public static void SeekTo(double seconds)
         {
             player.controls.currentPosition = seconds;
         }

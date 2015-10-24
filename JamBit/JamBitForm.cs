@@ -38,7 +38,8 @@ namespace JamBit
             db.Commit();
 
             MusicPlayer.parentForm = this;
-            MusicPlayer.SetVolume(prgVolume.Value);
+            MusicPlayer.SetVolume(Properties.Settings.Default.PreferredVolume);
+            prgVolume.Value = Properties.Settings.Default.PreferredVolume;
 
             currentPlaylist = new Playlist();
             foreach (Song s in db.Table<Song>())
@@ -93,9 +94,9 @@ namespace JamBit
             prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
         }
 
-        private void prgSongTime_SelecedValue(object sender, EventArgs e)
+        private void prgSongTime_SelectedValue(object sender, EventArgs e)
         {
-            MusicPlayer.SeekTo(((int)((double)prgSongTime.Value / 1000 * MusicPlayer.curSong.Length)));
+            MusicPlayer.SeekTo((((double)prgSongTime.Value / 1000 * MusicPlayer.curSong.Length)));
             int seconds = (int)MusicPlayer.CurrentTime();
             lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
         }
@@ -103,12 +104,13 @@ namespace JamBit
         private void pgrVolume_ValueSlidTo(object sender, EventArgs e)
         {
             MusicPlayer.SetVolume(prgVolume.Value);
+            Properties.Settings.Default.PreferredVolume = (byte)prgVolume.Value;
+            Properties.Settings.Default.Save();
         }
 
         private void btnPlay_Click(object sender, EventArgs e)
         {
-            MusicPlayer.PlaySong();
-            checkTime_Tick(this, new EventArgs());        
+            MusicPlayer.PlaySong();      
         }
 
         private void btnPause_Click(object sender, EventArgs e)
