@@ -29,11 +29,16 @@ namespace JamBit
         {
             InitializeComponent();
 
+            MessageBox.Show(prgVolume.Value.ToString() + " / " + prgVolume.Maximum.ToString());
+
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
             db.BeginTransaction();
-            db.DropTable<Song>();
+            //db.DropTable<Song>();
             db.CreateTable<Song>();
             db.Commit();
+
+            MusicPlayer.parentForm = this;
+            MusicPlayer.SetVolume(prgVolume.Value);
 
             currentPlaylist = new Playlist();
             foreach (Song s in db.Table<Song>())
@@ -64,8 +69,7 @@ namespace JamBit
 
             checkTime = new Timer();
             checkTime.Interval = 1000;
-            checkTime.Tick += new System.EventHandler(checkTime_Tick);
-            
+            checkTime.Tick += new System.EventHandler(checkTime_Tick);            
         }
 
         private void RefreshPlayer()
@@ -87,18 +91,6 @@ namespace JamBit
             lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
 
             prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
-            
-            if (seconds >= MusicPlayer.curSong.Length)
-            {
-                switch(playMode)
-                {
-                    case RepeatMode.Loop:
-                        if (playlistIndex == currentPlaylist.Count) playlistIndex = 0;
-                        MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
-                        break;
-                }
-                RefreshPlayer();
-            }
         }
 
         private void prgSongTime_SelecedValue(object sender, EventArgs e)
@@ -115,16 +107,12 @@ namespace JamBit
 
         private void btnPlay_Click(object sender, EventArgs e)
         {
-            if (MusicPlayer.curSong != null)
-            {
-                checkTime.Start();
-                MusicPlayer.PlaySong();
-            }
+            MusicPlayer.PlaySong();
+            checkTime_Tick(this, new EventArgs());        
         }
 
         private void btnPause_Click(object sender, EventArgs e)
         {
-            checkTime.Stop();
             MusicPlayer.PauseSong();
         }
 
@@ -233,6 +221,21 @@ namespace JamBit
             }));
             db.Insert(s);
             s.Data.Dispose();
+        }
+
+        public void PauseTimeCheck() { checkTime.Stop(); }
+
+        public void StartTimeCheck() { checkTime.Start(); }
+
+        public void SongEnded()
+        {
+            switch (playMode)
+            {
+                case RepeatMode.Loop:
+                    btnNext_Click(this, new EventArgs());
+                    break;
+            }
+            RefreshPlayer();
         }
     }
 }

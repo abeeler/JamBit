@@ -12,14 +12,22 @@ namespace JamBit
     class MusicPlayer
     {
         private static WindowsMediaPlayer player;
-        private static int currentVolume = 500;
+        private static Timer playCheck;
+        private static bool playing = false;
         public static Song curSong;
+        public static JamBitForm parentForm;
+        
 
         static MusicPlayer()
         {
             player = new WindowsMediaPlayer();
+            player.PlayStateChange += PlayStateChanged;
 
+            playCheck = new Timer();
+            playCheck.Interval = 100;
+            playCheck.Tick += playCheck_Tick;
         }
+
 
         public static void OpenSong(string fileName) {
             // Attempt to find filename in library and play that
@@ -31,20 +39,22 @@ namespace JamBit
         }
         public static void OpenSong(Song song)
         {
-            bool willPlay = curSong != null && CurrentlyPlaying();
             curSong = song;
             player.URL = song.FileName;
-            if (willPlay) player.controls.play();
+
+            playCheck.Start();
         }
 
         public static void PlaySong()
         {
             player.controls.play();
+            playing = true;
         }
 
         public static void PauseSong()
         {
             player.controls.pause();
+            playing = false;
         }
 
         public static bool CurrentlyPlaying()
@@ -65,6 +75,32 @@ namespace JamBit
         public static void SetVolume(int volume)
         {
             player.settings.volume = volume;
+        }
+
+        private static void PlayStateChanged(int newState)
+        {
+            switch((WMPPlayState)newState)
+            {
+                case WMPPlayState.wmppsStopped:
+                case WMPPlayState.wmppsPaused:
+                    parentForm.PauseTimeCheck();
+                    break;
+                case WMPPlayState.wmppsPlaying:
+                    parentForm.StartTimeCheck();
+                    break;
+                case WMPPlayState.wmppsMediaEnded:
+                    parentForm.SongEnded();
+                    break;
+            }
+        }
+
+        private static void playCheck_Tick(object sender, EventArgs e)
+        {
+            playCheck.Stop();
+            if (playing)
+                player.controls.play();
+            else
+                player.controls.pause();
         }
     }
 }
