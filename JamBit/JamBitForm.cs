@@ -7,8 +7,10 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
 namespace JamBit
 {
@@ -28,8 +30,6 @@ namespace JamBit
         public JamBitForm()
         {
             InitializeComponent();
-
-            MessageBox.Show(prgVolume.Value.ToString() + " / " + prgVolume.Maximum.ToString());
 
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
             db.BeginTransaction();
@@ -206,21 +206,19 @@ namespace JamBit
                 try { db.Get<Song>(s.Checksum); }
                 catch (System.InvalidOperationException)
                 {
-                    libraryScanner.ReportProgress(0, new Song(file));
+                    libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
+                        s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                    }));
+                    currentPlaylist.Songs.Add(s);
+                    db.Insert(s);
                 }
                 s.Data.Dispose();
             }
         }
 
         public void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            Song s = (Song)e.UserState;
-            currentPlaylist.Songs.Add(s);
-            lstPlaylist.Items.Add(new ListViewItem(new string[] {
-                s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-            }));
-            db.Insert(s);
-            s.Data.Dispose();
+        {            
+            lstPlaylist.Items.Add((ListViewItem)e.UserState);
         }
 
         public void PauseTimeCheck() { checkTime.Stop(); }
