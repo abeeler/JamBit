@@ -32,7 +32,6 @@
             // 
             // SlidableProgressBar
             // 
-            this.Maximum = 1000;
             this.Step = 0;
             this.ResumeLayout(false);
 

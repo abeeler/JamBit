@@ -4,18 +4,30 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using WMPLib;
 
 namespace JamBit
 {
     class MusicPlayer
     {
-        [DllImport("winmm.dll")]
-        private static extern long mciSendString(string lpstrCommand, StringBuilder lpstrReturnString, int uReturnLength, int hwndCallback);
-        private static int returnVal;
-        private static StringBuilder returnData = new StringBuilder();
-
-        private static int currentVolume = 500;
+        private static WindowsMediaPlayer player;
+        private static Timer playCheck;
+        private static bool playing = false;
         public static Song curSong;
+        public static JamBitForm parentForm;
+        
+
+        static MusicPlayer()
+        {
+            player = new WindowsMediaPlayer();
+            player.PlayStateChange += PlayStateChanged;
+
+            playCheck = new Timer();
+            playCheck.Interval = 100;
+            playCheck.Tick += playCheck_Tick;
+        }
+
 
         public static void OpenSong(string fileName) {
             // Attempt to find filename in library and play that
@@ -28,62 +40,67 @@ namespace JamBit
         public static void OpenSong(Song song)
         {
             curSong = song;
-            mciSendString("close curSong", null, 0, 0);
-            mciSendString("open \"" + song.FileName + "\" type MPEGVideo alias curSong", null, 0, 0);
-            mciSendString("setaudio curSong volume to " + currentVolume, null, 0, 0);
-            PlaySong();
+            player.URL = song.FileName;
+
+            playCheck.Start();
         }
 
         public static void PlaySong()
         {
-            mciSendString("play curSong", null, 0, 0);
+            player.controls.play();
+            playing = true;
         }
 
         public static void PauseSong()
         {
-            mciSendString("stop curSong", null, 0, 0);
+            player.controls.pause();
+            playing = false;
         }
 
         public static bool CurrentlyPlaying()
         {
-            mciSendString("status curSong mode", returnData, returnData.Capacity, 0);
-            return returnData.ToString().Substring(0, 7) == "playing";
+            return player.playState == WMPPlayState.wmppsPlaying;
         }
 
-        public static void SeekTo(int seconds)
+        public static void SeekTo(double seconds)
         {
-            if (CurrentlyPlaying())
-                mciSendString("play curSong from " + (seconds * 1000), null, 0, 0);
-            else
-                mciSendString("seek curSong to " + (seconds * 1000), null, 0, 0);
+            player.controls.currentPosition = seconds;
         }
 
-        public static long SongLength()
+        public static double CurrentTime()
         {
-            if (curSong == null)
-                return 0;
-
-            mciSendString("status curSong length", returnData, returnData.Capacity, 0);
-            return long.Parse(returnData.ToString());
-        }
-
-        public static String CurrentTime()
-        {
-            if (curSong == null)
-                return "0:00";
-
-            mciSendString("status curSong position", returnData, returnData.Capacity, 0);
-            return returnData.ToString();
+            return player.controls.currentPosition;
         }
 
         public static void SetVolume(int volume)
         {
-            if (volume < 0)
-                volume = 0;
-            if (volume > 1000)
-                volume = 1000;
-            currentVolume = volume;
-            mciSendString("setaudio curSong volume to " + volume, null, 0, 0);
+            player.settings.volume = volume;
+        }
+
+        private static void PlayStateChanged(int newState)
+        {
+            switch((WMPPlayState)newState)
+            {
+                case WMPPlayState.wmppsStopped:
+                case WMPPlayState.wmppsPaused:
+                    parentForm.PauseTimeCheck();
+                    break;
+                case WMPPlayState.wmppsPlaying:
+                    parentForm.StartTimeCheck();
+                    break;
+                case WMPPlayState.wmppsMediaEnded:
+                    parentForm.SongEnded();
+                    break;
+            }
+        }
+
+        private static void playCheck_Tick(object sender, EventArgs e)
+        {
+            playCheck.Stop();
+            if (playing)
+                player.controls.play();
+            else
+                player.controls.pause();
         }
     }
 }
