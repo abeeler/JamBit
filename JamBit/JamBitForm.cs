@@ -17,6 +17,8 @@ namespace JamBit
 {
     public partial class JamBitForm : Form
     {
+        #region Fields
+
         private Timer checkTime;
         private OpenFileDialog openFileDialog;
         private SQLite.SQLiteConnection db;
@@ -27,54 +29,67 @@ namespace JamBit
         private BackgroundWorker playlistPopulating;
         private ConcurrentQueue<string> foldersToScan;
 
+        #endregion
+
         enum RepeatMode { None, Loop, Repeat, Shuffle }
 
         public JamBitForm()
         {
             InitializeComponent();
 
+            // Establish DB connection
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
-            db.BeginTransaction();
+            
             //db.DropTable<Song>();
-            db.CreateTable<Song>();
-            db.Commit();
 
+            // Create tables if they do not already exist
+            db.CreateTable<Song>();
+
+            // Create concurrent queue for folder scanning
             foldersToScan = new ConcurrentQueue<string>();
 
+            // Initialize music player
             MusicPlayer.parentForm = this;
             MusicPlayer.SetVolume(Properties.Settings.Default.PreferredVolume);
             prgVolume.Value = Properties.Settings.Default.PreferredVolume;
 
+            // If there are songs in the library, load the first
             if (db.Table<Song>().Count() > 0)
             {
                 MusicPlayer.OpenSong(db.Table<Song>().First());
                 RefreshPlayer();
             }
 
+            // Initialize the dialog for openning new files
             openFileDialog = new OpenFileDialog();
             openFileDialog.Multiselect = true;
             openFileDialog.Filter = "MP3|*.mp3|" +
                 "Music Files|*.mp3";
             openFileDialog.FileOk += openFileDialog_OnFileOk;
 
+            // Initialize the background worker for scanning in files from library folders
             libraryScanner = new BackgroundWorker();
             libraryScanner.WorkerReportsProgress = true;
             libraryScanner.WorkerSupportsCancellation = true;
             libraryScanner.DoWork += libraryScanner_DoWork;
             libraryScanner.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
 
+            // Initialize the background worker for populating the playlist from the database
             playlistPopulating = new BackgroundWorker();
             playlistPopulating.WorkerReportsProgress = true;
             playlistPopulating.WorkerSupportsCancellation = true;
             playlistPopulating.DoWork += playlistPopulating_DoWork;
             playlistPopulating.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
 
-            playlistPopulating.RunWorkerAsync(db.Table<Song>());
+            // Start playlist
+            playlistPopulating.RunWorkerAsync();
 
             checkTime = new Timer();
             checkTime.Interval = 1000;
             checkTime.Tick += new System.EventHandler(checkTime_Tick);            
         }
+
+        #region Form Methods
 
         private void RefreshPlayer()
         {
@@ -88,6 +103,48 @@ namespace JamBit
             String format = MusicPlayer.curSong.Data.Properties.Duration.Hours > 0 ? @"h':'mm':'ss" : @"mm':'ss";
             lblSongLength.Text = (MusicPlayer.curSong.Data.Properties.Duration - new TimeSpan(0, 0, 1)).ToString(format);
         }
+
+        public void PauseTimeCheck() { checkTime.Stop(); }
+
+        public void StartTimeCheck() { checkTime.Start(); }
+
+        public void SongEnded()
+        {
+            switch (playMode)
+            {
+                case RepeatMode.Loop:
+                    btnNext_Click(this, new EventArgs());
+                    break;
+            }
+            RefreshPlayer();
+        }
+
+        public void AddSong(string fileName)
+        {
+            Song s = new Song(fileName);
+            try { db.Get<Song>(s.Checksum); }
+            catch (System.InvalidOperationException)
+            {
+                currentPlaylist.Songs.Add(s);
+                lstPlaylist.Items.Add(new ListViewItem(new string[] {
+                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                }));
+                db.Insert(s);
+            }
+            s.Data.Dispose();
+        }
+
+        public void LibraryScan(params string[] folderPaths)
+        {
+            foreach (string folder in folderPaths)
+                foldersToScan.Enqueue(folder);
+            if (!libraryScanner.IsBusy)
+                libraryScanner.RunWorkerAsync();
+        }
+
+        #endregion
+
+        #region Control Event Methods
 
         private void checkTime_Tick(object sender, EventArgs e)
         {
@@ -192,30 +249,7 @@ namespace JamBit
             new OptionsForm(this).Show();
         }
 
-        public void AddSong(string fileName)
-        {
-            Song s = new Song(fileName);
-            try { db.Get<Song>(s.Checksum); }
-            catch (System.InvalidOperationException)
-            {
-                currentPlaylist.Songs.Add(s);
-                lstPlaylist.Items.Add(new ListViewItem(new string[] {
-                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-                }));
-                db.Insert(s);
-            }
-            s.Data.Dispose();
-        }
-
-        public void LibraryScan(params string[] folderPaths)
-        {
-            foreach (string folder in folderPaths)
-                foldersToScan.Enqueue(folder);
-            if (!libraryScanner.IsBusy)
-                libraryScanner.RunWorkerAsync();
-        }
-
-        public void libraryScanner_DoWork(object sender, DoWorkEventArgs e)
+        private void libraryScanner_DoWork(object sender, DoWorkEventArgs e)
         {
             string folder;
 
@@ -245,43 +279,34 @@ namespace JamBit
             }                
         }
 
-        public void playlistPopulating_DoWork(object sender, DoWorkEventArgs e)
+        private void playlistPopulating_DoWork(object sender, DoWorkEventArgs e)
         {
             playlistPopulating.ReportProgress(1);
             currentPlaylist = new Playlist();
-            foreach (Song s in (IEnumerable<Song>)e.Argument)
-            {
-                currentPlaylist.Songs.Add(s);
-                playlistPopulating.ReportProgress(0, new ListViewItem(new string[] {
-                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-                }));
-            }
+            for (int i = 0; i < db.Table<Song>().Count(); i += 10)
+                foreach (Song s in db.Table<Song>().Skip(i).Take(10))
+                {
+                    currentPlaylist.Songs.Add(s);
+                    playlistPopulating.ReportProgress(0, new ListViewItem(new string[] {
+                        s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                    }));
+                }
             playlistPopulating.ReportProgress(2);
         }
 
-        public void playlistBackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void playlistBackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             if (e.ProgressPercentage == 1)
-                Cursor.Current = Cursors.WaitCursor;
+            {
+                this.Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
+            }
             else if (e.ProgressPercentage == 2)
-                Cursor.Current = Cursors.Default;
+                this.Cursor = Cursors.Default;
             else
                 lstPlaylist.Items.Add((ListViewItem)e.UserState);
         }
 
-        public void PauseTimeCheck() { checkTime.Stop(); }
-
-        public void StartTimeCheck() { checkTime.Start(); }
-
-        public void SongEnded()
-        {
-            switch (playMode)
-            {
-                case RepeatMode.Loop:
-                    btnNext_Click(this, new EventArgs());
-                    break;
-            }
-            RefreshPlayer();
-        }
+        #endregion
     }
 }
