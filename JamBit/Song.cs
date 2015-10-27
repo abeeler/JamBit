@@ -11,8 +11,11 @@ namespace JamBit
 {
     class Song
     {
-        [PrimaryKey, MaxLength(32)]
-        public string Checksum { get; set; }
+        [PrimaryKey, AutoIncrement]
+        public int ID
+        {
+            get; set;
+        }
 
         private string _fileName;
         [MaxLength(380)]
@@ -25,21 +28,9 @@ namespace JamBit
                 if (Data != null)
                     Data.Dispose();
                 Data = TagLib.File.Create(_fileName);
-                using (var md5 = MD5.Create())
-                {
-                    using (var stream = File.OpenRead(_fileName))
-                    {
-                        byte[] ba = md5.ComputeHash(stream);
-                        StringBuilder hex = new StringBuilder(ba.Length * 2);
-                        foreach (byte b in ba)
-                            hex.AppendFormat("{0:x2}", b);
-                        Checksum = hex.ToString();
-                    }
-                }
             }
         }
 
-        [Ignore]
         public int PlayCount { get; set; }
 
         [Ignore]
@@ -49,7 +40,9 @@ namespace JamBit
         [Ignore]
         public double Length { get { return Data.Properties.Duration.TotalSeconds; } }
 
-        public Song() { }
+        public Song() {
+            PlayCount = 0;
+        }
 
         public Song(string fileName)
         {

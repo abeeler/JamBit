@@ -12,8 +12,8 @@ namespace JamBit
         [PrimaryKey, AutoIncrement]
         public int ID { get; set; }
 
-        public int Playlist { get; set; }
+        public int PlaylistID { get; set; }
 
-        public int Song { get; set; }
+        public int SongID { get; set; }
     }
 }

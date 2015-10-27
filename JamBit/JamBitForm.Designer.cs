@@ -47,6 +47,7 @@
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrefLibFolders = new System.Windows.Forms.ToolStripMenuItem();
+            this.treeLibrary = new System.Windows.Forms.TreeView();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -102,7 +103,7 @@
             this.lblSongInformation.Margin = new System.Windows.Forms.Padding(0);
             this.lblSongInformation.Name = "lblSongInformation";
             this.lblSongInformation.PauseLength = 2500;
-            this.lblSongInformation.Size = new System.Drawing.Size(254, 12);
+            this.lblSongInformation.Size = new System.Drawing.Size(749, 12);
             this.lblSongInformation.TabIndex = 9;
             // 
             // prgVolume
@@ -198,7 +199,7 @@
             this.preferencesToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(284, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(773, 24);
             this.menuStrip1.TabIndex = 14;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -232,11 +233,19 @@
             this.mnuPrefLibFolders.Text = "Library Folders";
             this.mnuPrefLibFolders.Click += new System.EventHandler(this.mnuPrefLibFolders_Click);
             // 
+            // treeLibrary
+            // 
+            this.treeLibrary.Location = new System.Drawing.Point(278, 44);
+            this.treeLibrary.Name = "treeLibrary";
+            this.treeLibrary.Size = new System.Drawing.Size(483, 356);
+            this.treeLibrary.TabIndex = 15;
+            // 
             // JamBitForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 412);
+            this.ClientSize = new System.Drawing.Size(773, 412);
+            this.Controls.Add(this.treeLibrary);
             this.Controls.Add(this.btnNext);
             this.Controls.Add(this.btnPrevious);
             this.Controls.Add(this.lstPlaylist);
@@ -280,6 +289,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuFileOpen;
         private System.Windows.Forms.ToolStripMenuItem preferencesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mnuPrefLibFolders;
+        private System.Windows.Forms.TreeView treeLibrary;
     }
 }
 
