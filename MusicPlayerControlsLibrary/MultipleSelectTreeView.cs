@@ -13,7 +13,9 @@ namespace MusicPlayerControlsLibrary
     public partial class MultipleSelectTreeView : TreeView
     {
         private List<TreeNode> _selectedNodes = new List<TreeNode>();
-        public IEnumerator<TreeNode> SelectedNodes { get { return _selectedNodes.GetEnumerator(); } }
+        public IEnumerable<TreeNode> SelectedNodes { get { return _selectedNodes; } }
+        public int SelectedCount { get { return _selectedNodes.Count; } }
+        public TreeNode LastSelectedNode { get; set; }
 
         public MultipleSelectTreeView()
         {
@@ -23,9 +25,12 @@ namespace MusicPlayerControlsLibrary
             this.BackColor = new TreeNode().BackColor;
         }
 
-        protected override void OnNodeMouseDoubleClick(TreeNodeMouseClickEventArgs e)
+        protected override void OnBeforeSelect(TreeViewCancelEventArgs e)
         {
-            base.OnNodeMouseDoubleClick(e);
+            e.Cancel = true;
+            base.OnBeforeSelect(e);
+
+            base.OnBeforeSelect(e);
         }
 
         protected override void OnNodeMouseClick(TreeNodeMouseClickEventArgs e)
@@ -37,12 +42,37 @@ namespace MusicPlayerControlsLibrary
                     if (_selectedNodes.Contains(e.Node))
                         DeselectNodes(e.Node);
                     else
+                    {
                         SelectNodes(e.Node);
+                        LastSelectedNode = e.Node;
+                    }
+                }
+                else if (ModifierKeys == Keys.Shift && LastSelectedNode != null)
+                {
+                    if (e.Node == LastSelectedNode)
+                        return;
+
+                    if (e.Node.Parent == LastSelectedNode.Parent)
+                    {                        
+                        if (LastSelectedNode.Index < e.Node.Index)
+                            while (LastSelectedNode != e.Node)
+                            {
+                                LastSelectedNode = LastSelectedNode.NextVisibleNode;
+                                SelectNodes(LastSelectedNode);
+                            }
+                        else
+                            while (LastSelectedNode != e.Node)
+                            {
+                                LastSelectedNode = LastSelectedNode.PrevVisibleNode;
+                                SelectNodes(LastSelectedNode);
+                            }
+                    }
                 }
                 else
                 {
                     ClearSelection();
-                    base.OnNodeMouseClick(e);
+                    SelectNodes(e.Node);
+                    LastSelectedNode = e.Node;
                 }
             }
         }
@@ -66,6 +96,9 @@ namespace MusicPlayerControlsLibrary
                     node.BackColor = this.BackColor;
                     node.ForeColor = this.ForeColor;
                     _selectedNodes.Remove(node);
+
+                    if (node == LastSelectedNode)
+                        LastSelectedNode = null;
                 }
             }
         }

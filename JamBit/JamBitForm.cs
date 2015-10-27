@@ -25,6 +25,7 @@ namespace JamBit
         private OpenFileDialog openFileDialog;
         private BackgroundWorker libraryScanner;
         private BackgroundWorker playlistPopulating;
+        private ContextMenuStrip libraryOptions;
 
         private ConcurrentQueue<string> foldersToScan;
 
@@ -63,6 +64,11 @@ namespace JamBit
             openFileDialog.Filter = "MP3|*.mp3|" +
                 "Music Files|*.mp3";
             openFileDialog.FileOk += openFileDialog_OnFileOk;
+
+            // Initialize the library options context menu
+            libraryOptions = new ContextMenuStrip();
+            libraryOptions.Items.Add("Add selection to current playlist");
+            libraryOptions.ItemClicked += libraryOptions_ItemClick;
 
             // Initialize the background worker for scanning in files from library folders
             libraryScanner = new BackgroundWorker();
@@ -104,6 +110,7 @@ namespace JamBit
             }
 
             treeLibrary.NodeMouseDoubleClick += treeLibrary_NodeMouseDoubleClick;
+            treeLibrary.MouseClick += treeLibrary_MouseClick;
 
             // Start playlist
 
@@ -475,6 +482,19 @@ namespace JamBit
                         AddSongToPlaylist(s);
                     break;
             }
+        }
+
+        private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem.Text == "Add selection to current playlist")
+                foreach (TreeNode node in treeLibrary.SelectedNodes)
+                    treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
+        }
+
+        private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                libraryOptions.Show(sender as Control, e.Location);
         }
 
         #endregion
