@@ -28,8 +28,17 @@ namespace JamBit
                 if (Data != null)
                     Data.Dispose();
                 Data = TagLib.File.Create(_fileName);
+                Title = Data.Tag.Title;
+                Artist = Data.Tag.FirstPerformer;
+                Album = Data.Tag.Album;
             }
         }
+
+        public string Title { get; set; }
+
+        public string Artist { get; set; }
+
+        public string Album { get; set; }
 
         public int PlayCount { get; set; }
 
@@ -54,6 +63,16 @@ namespace JamBit
         public override string ToString()
         {
             return Data.Tag.Title;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != this.GetType())
+                return false;
+
+            Song s = obj as Song;
+
+            return this.Artist == s.Artist && this.Title == s.Title && this.Album == s.Album;
         }
     }
 }

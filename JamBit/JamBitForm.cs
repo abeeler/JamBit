@@ -151,12 +151,10 @@ namespace JamBit
             // Create a new song object using the given file
             Song s = new Song(fileName);
 
-            // Attempt to find the checksum in the database
-            try { db.Get<Song>(s.Checksum); }
-
-            // If it is not found, add the song to the library and the current playlist
-            catch (System.InvalidOperationException)
+            // Attempt to find the song in the database
+            if (db.Find<Song>(dbSong => dbSong.Title == s.Title && dbSong.Artist == s.Artist) == null)
             {
+                // If it is not found, add the song to the library and the current playlist
                 currentPlaylist.Songs.Add(s);
                 lstPlaylist.Items.Add(new ListViewItem(new string[] {
                     s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
@@ -321,20 +319,20 @@ namespace JamBit
                             s = new Song(file);
 
                             // Check for that song in the database
-                            db.Get<Song>(s.Checksum);
-                        }
-                        // If the song is not in the database
-                        catch (System.InvalidOperationException)
-                        {
-                            // Update the playlist
-                            libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
-                                s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-                            }));
-                            currentPlaylist.Songs.Add(s);
+                            if (db.Find<Song>(dbSong => dbSong.Title == s.Title && dbSong.Artist == s.Artist) == null)
+                            {
+                                // If the song is not in the database
+                                // Update the playlist
+                                libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
+                                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                                }));
+                                currentPlaylist.Songs.Add(s);
 
-                            // Add the song to the database
-                            db.Insert(s);
-                        }
+                                // Add the song to the database
+                                db.Insert(s);
+                            }
+                        }                        
+                        
                         // If the filename is too long
                         catch (System.IO.PathTooLongException) { }
                         if (s.Data != null)
