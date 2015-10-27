@@ -32,9 +32,6 @@
             this.lblSongLength = new System.Windows.Forms.Label();
             this.btnPlay = new System.Windows.Forms.Button();
             this.btnPause = new System.Windows.Forms.Button();
-            this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
-            this.prgVolume = new MusicPlayerControlsLibrary.SlidableProgressBar();
-            this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
             this.btnOpen = new System.Windows.Forms.Button();
             this.lstPlaylist = new System.Windows.Forms.ListView();
             this.clmTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -47,8 +44,11 @@
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrefLibFolders = new System.Windows.Forms.ToolStripMenuItem();
-            this.treeLibrary = new System.Windows.Forms.TreeView();
             this.btnPlayMode = new System.Windows.Forms.Button();
+            this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
+            this.prgVolume = new MusicPlayerControlsLibrary.SlidableProgressBar();
+            this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
+            this.treeLibrary = new MusicPlayerControlsLibrary.MultipleSelectTreeView();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -92,42 +92,6 @@
             this.btnPause.Text = "Pause";
             this.btnPause.UseVisualStyleBackColor = true;
             this.btnPause.Click += new System.EventHandler(this.btnPause_Click);
-            // 
-            // lblSongInformation
-            // 
-            this.lblSongInformation.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.lblSongInformation.BackColor = System.Drawing.Color.Transparent;
-            this.lblSongInformation.CycleText = new string[] {
-        " "};
-            this.lblSongInformation.LabelSpeed = 30;
-            this.lblSongInformation.Location = new System.Drawing.Point(12, 24);
-            this.lblSongInformation.Margin = new System.Windows.Forms.Padding(0);
-            this.lblSongInformation.Name = "lblSongInformation";
-            this.lblSongInformation.PauseLength = 2500;
-            this.lblSongInformation.Size = new System.Drawing.Size(749, 12);
-            this.lblSongInformation.TabIndex = 9;
-            // 
-            // prgVolume
-            // 
-            this.prgVolume.Location = new System.Drawing.Point(12, 386);
-            this.prgVolume.Name = "prgVolume";
-            this.prgVolume.Size = new System.Drawing.Size(260, 14);
-            this.prgVolume.Step = 0;
-            this.prgVolume.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.prgVolume.TabIndex = 4;
-            this.prgVolume.Value = 50;
-            this.prgVolume.ValueSlidTo += new System.EventHandler(this.pgrVolume_ValueSlidTo);
-            // 
-            // prgSongTime
-            // 
-            this.prgSongTime.Location = new System.Drawing.Point(52, 39);
-            this.prgSongTime.Maximum = 1000;
-            this.prgSongTime.Name = "prgSongTime";
-            this.prgSongTime.Size = new System.Drawing.Size(180, 23);
-            this.prgSongTime.Step = 0;
-            this.prgSongTime.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.prgSongTime.TabIndex = 3;
-            this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelectedValue);
             // 
             // btnOpen
             // 
@@ -234,13 +198,6 @@
             this.mnuPrefLibFolders.Text = "Library Folders";
             this.mnuPrefLibFolders.Click += new System.EventHandler(this.mnuPrefLibFolders_Click);
             // 
-            // treeLibrary
-            // 
-            this.treeLibrary.Location = new System.Drawing.Point(278, 44);
-            this.treeLibrary.Name = "treeLibrary";
-            this.treeLibrary.Size = new System.Drawing.Size(483, 356);
-            this.treeLibrary.TabIndex = 15;
-            // 
             // btnPlayMode
             // 
             this.btnPlayMode.Location = new System.Drawing.Point(197, 97);
@@ -251,13 +208,57 @@
             this.btnPlayMode.UseVisualStyleBackColor = true;
             this.btnPlayMode.Click += new System.EventHandler(this.btnPlayMode_Click);
             // 
+            // lblSongInformation
+            // 
+            this.lblSongInformation.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.lblSongInformation.BackColor = System.Drawing.Color.Transparent;
+            this.lblSongInformation.CycleText = new string[] {
+        " "};
+            this.lblSongInformation.LabelSpeed = 30;
+            this.lblSongInformation.Location = new System.Drawing.Point(12, 24);
+            this.lblSongInformation.Margin = new System.Windows.Forms.Padding(0);
+            this.lblSongInformation.Name = "lblSongInformation";
+            this.lblSongInformation.PauseLength = 2500;
+            this.lblSongInformation.Size = new System.Drawing.Size(749, 12);
+            this.lblSongInformation.TabIndex = 9;
+            // 
+            // prgVolume
+            // 
+            this.prgVolume.Location = new System.Drawing.Point(12, 386);
+            this.prgVolume.Name = "prgVolume";
+            this.prgVolume.Size = new System.Drawing.Size(260, 14);
+            this.prgVolume.Step = 0;
+            this.prgVolume.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.prgVolume.TabIndex = 4;
+            this.prgVolume.Value = 50;
+            this.prgVolume.ValueSlidTo += new System.EventHandler(this.pgrVolume_ValueSlidTo);
+            // 
+            // prgSongTime
+            // 
+            this.prgSongTime.Location = new System.Drawing.Point(52, 39);
+            this.prgSongTime.Maximum = 1000;
+            this.prgSongTime.Name = "prgSongTime";
+            this.prgSongTime.Size = new System.Drawing.Size(180, 23);
+            this.prgSongTime.Step = 0;
+            this.prgSongTime.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.prgSongTime.TabIndex = 3;
+            this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelectedValue);
+            // 
+            // treeLibrary
+            // 
+            this.treeLibrary.HideSelection = false;
+            this.treeLibrary.Location = new System.Drawing.Point(278, 39);
+            this.treeLibrary.Name = "treeLibrary";
+            this.treeLibrary.Size = new System.Drawing.Size(483, 361);
+            this.treeLibrary.TabIndex = 17;
+            // 
             // JamBitForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(773, 412);
-            this.Controls.Add(this.btnPlayMode);
             this.Controls.Add(this.treeLibrary);
+            this.Controls.Add(this.btnPlayMode);
             this.Controls.Add(this.btnNext);
             this.Controls.Add(this.btnPrevious);
             this.Controls.Add(this.lstPlaylist);
@@ -301,8 +302,8 @@
         private System.Windows.Forms.ToolStripMenuItem mnuFileOpen;
         private System.Windows.Forms.ToolStripMenuItem preferencesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mnuPrefLibFolders;
-        private System.Windows.Forms.TreeView treeLibrary;
         private System.Windows.Forms.Button btnPlayMode;
+        private MusicPlayerControlsLibrary.MultipleSelectTreeView treeLibrary;
     }
 }
 

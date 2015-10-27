@@ -15,9 +15,9 @@ namespace JamBit
         [MaxLength(64)]
         public string Name { get; set; }
 
-        private List<Song> _songs = new List<Song>();
+        private List<int> _songs = new List<int>();
         [Ignore]
-        public List<Song> Songs { get { return _songs; } }
+        public List<int> Songs { get { return _songs; } }
 
         [Ignore]
         public int Count { get { return _songs.Count; } }
@@ -33,7 +33,7 @@ namespace JamBit
             try
             {
                 foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == ID))
-                    _songs.Add(db.Get<Song>(pi.SongID));
+                    _songs.Add(pi.SongID);
             }
             catch (InvalidOperationException) { }         
         }

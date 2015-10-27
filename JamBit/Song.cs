@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace JamBit
 {
-    class Song
+    public class Song
     {
         [PrimaryKey, AutoIncrement]
         public int ID

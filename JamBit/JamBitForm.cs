@@ -19,16 +19,19 @@ namespace JamBit
     {
         #region Fields
 
+        public SQLiteConnection db;
+
         private Timer checkTime;
         private OpenFileDialog openFileDialog;
-        private SQLite.SQLiteConnection db;
-        private RepeatMode playMode = RepeatMode.Loop;
-        private Random shuffleRandom = new Random();
-        private Playlist currentPlaylist;
-        private int playlistIndex = 1;
         private BackgroundWorker libraryScanner;
         private BackgroundWorker playlistPopulating;
+
         private ConcurrentQueue<string> foldersToScan;
+
+        private RepeatMode playMode = RepeatMode.Loop;
+        private Random shuffleRandom = new Random();
+        private Playlist currentPlaylist = new Playlist();
+        private int playlistIndex = 1;
 
         #endregion
 
@@ -41,7 +44,7 @@ namespace JamBit
             // Establish DB connection
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
             
-            db.DropTable<Song>();
+            //db.DropTable<Song>();
 
             // Create tables if they do not already exist
             db.CreateTable<Song>();
@@ -53,13 +56,6 @@ namespace JamBit
             MusicPlayer.parentForm = this;
             MusicPlayer.SetVolume(Properties.Settings.Default.PreferredVolume);
             prgVolume.Value = Properties.Settings.Default.PreferredVolume;
-
-            // If there are songs in the library, load the first
-            if (db.Table<Song>().Count() > 0)
-            {
-                MusicPlayer.OpenSong(db.Table<Song>().First());
-                RefreshPlayer();
-            }
 
             // Initialize the dialog for opening new files
             openFileDialog = new OpenFileDialog();
@@ -83,24 +79,31 @@ namespace JamBit
             playlistPopulating.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
 
             // Initialzize tree view
-            treeLibrary.Nodes.Add("Library");
+            treeLibrary.Nodes.Add(new LibraryNode(LibraryNode.LibraryNodeType.Library));
             foreach (Song artist in db.Table<Song>().Distinct<Song>(new Song.ArtistComparator()))
             {
-                TreeNode artistNode = new TreeNode();
+                LibraryNode artistNode = new LibraryNode(LibraryNode.LibraryNodeType.Artist);
                 artistNode.Text = artist.Artist;
                 foreach (Song album in db.Table<Song>().Where(s => s.Artist == artist.Artist).Distinct<Song>(new Song.AlbumComparator()))
                 {
-                    TreeNode albumNode = new TreeNode();
+                    LibraryNode albumNode = new LibraryNode(LibraryNode.LibraryNodeType.Album);
+                    albumNode.DatabaseKey = artistNode.Text;
                     albumNode.Text = album.Album;
                     foreach (Song song in db.Table<Song>().Where(s => s.Artist == artist.Artist && s.Album == album.Album))
-                        albumNode.Nodes.Add(song.Title);
+                    {
+                        LibraryNode songNode = new LibraryNode(LibraryNode.LibraryNodeType.Song);
+                        songNode.DatabaseKey = song.ID;
+                        songNode.Text = song.Title;
+                        albumNode.Nodes.Add(songNode);
+                    }
                     artistNode.Nodes.Add(albumNode);
                 }
                 treeLibrary.Nodes[0].Nodes.Add(artistNode);
             }
 
+            treeLibrary.NodeMouseDoubleClick += treeLibrary_NodeMouseDoubleClick;
+
             // Start playlist
-            playlistPopulating.RunWorkerAsync();
 
             // Initialize timer to update visual representations of song position
             checkTime = new Timer();
@@ -193,7 +196,7 @@ namespace JamBit
             if (db.Find<Song>(dbSong => dbSong.Title == s.Title && dbSong.Artist == s.Artist) == null)
             {
                 // If it is not found, add the song to the library and the current playlist
-                currentPlaylist.Songs.Add(s);
+                currentPlaylist.Songs.Add(s.ID);
                 lstPlaylist.Items.Add(new ListViewItem(new string[] {
                     s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
                 }));
@@ -218,6 +221,30 @@ namespace JamBit
             // Start the scanner if it isn't already running
             if (!libraryScanner.IsBusy)
                 libraryScanner.RunWorkerAsync();
+        }
+
+        public void AddSongToPlaylist(int id)
+        {
+            try { AddSongToPlaylist(db.Get<Song>(id)); }
+            catch (System.InvalidOperationException) { }
+        }
+
+        public void AddSongToPlaylist(Song s)
+        {
+            if (!currentPlaylist.Songs.Contains(s.ID))
+            {
+                if (currentPlaylist.Count == 0)
+                {
+                    MusicPlayer.OpenSong(s);
+                    RefreshPlayer();
+                }
+                currentPlaylist.Songs.Add(s.ID);
+                lstPlaylist.Items.Add(new ListViewItem(new string[] {
+                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
+                }));
+
+                
+            }
         }
 
         #endregion
@@ -297,7 +324,7 @@ namespace JamBit
             if (currentPlaylist.Count > 1) {
                 // Open the next song in the playlist
                 if (playlistIndex == currentPlaylist.Count) playlistIndex = 0;
-                MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
+                MusicPlayer.OpenSong(db.Get<Song>(currentPlaylist.Songs[playlistIndex++]));
                 RefreshPlayer();
             }
         }
@@ -309,7 +336,7 @@ namespace JamBit
             {
                 // Open the previous song in the playlist
                 playlistIndex = playlistIndex == 1 ? currentPlaylist.Count : playlistIndex - 1;
-                MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex - 1]);
+                MusicPlayer.OpenSong(db.Get<Song>(currentPlaylist.Songs[playlistIndex - 1]));
                 RefreshPlayer();
             }
         }
@@ -321,7 +348,7 @@ namespace JamBit
             {
                 // Open the selected song
                 playlistIndex = lstPlaylist.SelectedIndices[0];
-                MusicPlayer.OpenSong(currentPlaylist.Songs[playlistIndex++]);
+                MusicPlayer.OpenSong(db.Get<Song>(currentPlaylist.Songs[playlistIndex++]));
                 RefreshPlayer();
             }
         }
@@ -364,7 +391,7 @@ namespace JamBit
                                 libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
                                     s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
                                 }));
-                                currentPlaylist.Songs.Add(s);
+                                currentPlaylist.Songs.Add(s.ID);
 
                                 // Add the song to the database
                                 db.Insert(s);
@@ -387,17 +414,7 @@ namespace JamBit
             // Reset the current playlist
             currentPlaylist = new Playlist();
 
-            // Take ten songs from the database and add them to the playlist
-            for (int i = 0; i < db.Table<Song>().Count(); i += 10)
-                foreach (Song s in db.Table<Song>().Skip(i).Take(10))
-                {
-                    currentPlaylist.Songs.Add(s);
 
-                    // Send the song information back to the main thread
-                    playlistPopulating.ReportProgress(0, new ListViewItem(new string[] {
-                        s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-                    }));
-                }
 
             // Return the cursor to normal
             playlistPopulating.ReportProgress(2);
@@ -431,6 +448,31 @@ namespace JamBit
 
             // Update button text
             btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
+        }
+
+        private void treeLibrary_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            LibraryNode node = e.Node as LibraryNode;
+            switch (node.LibraryType)
+            {
+                case LibraryNode.LibraryNodeType.Song:
+                    AddSongToPlaylist((int)node.DatabaseKey);
+                    break;
+                case LibraryNode.LibraryNodeType.Album:
+                    foreach (Song s in db.Table<Song>().Where(s => s.Album == node.Text && s.Artist == (string)node.DatabaseKey))
+                        AddSongToPlaylist(s);
+                    break;
+                case LibraryNode.LibraryNodeType.Artist:
+                    foreach (Song s in db.Table<Song>().Where(s => s.Artist == node.Text))
+                        AddSongToPlaylist(s);
+                    break;
+                case LibraryNode.LibraryNodeType.Playlist:
+                    break;
+                case LibraryNode.LibraryNodeType.Library:
+                    foreach (Song s in db.Table<Song>())
+                        AddSongToPlaylist(s);
+                    break;
+            }
         }
 
         #endregion
