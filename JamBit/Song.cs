@@ -74,5 +74,34 @@ namespace JamBit
 
             return this.Artist == s.Artist && this.Title == s.Title && this.Album == s.Album;
         }
+
+        /// <summary>
+        /// Used to determine distinct artist names in the library
+        /// </summary>
+        public class ArtistComparator : IEqualityComparer<Song>
+        {
+            public bool Equals(Song x, Song y)
+            {
+                return x.Artist.ToLower() == y.Artist.ToLower();
+            }
+
+            public int GetHashCode(Song obj)
+            {
+                return obj.Artist.ToLower().GetHashCode();
+            }
+        }
+
+        public class AlbumComparator : IEqualityComparer<Song>
+        {
+            public bool Equals(Song x, Song y)
+            {
+                return x.Album == y.Album;
+            }
+
+            public int GetHashCode(Song obj)
+            {
+                return obj.Album.ToLower().GetHashCode();
+            }
+        }
     }
 }

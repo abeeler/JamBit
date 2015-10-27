@@ -81,6 +81,23 @@ namespace JamBit
             playlistPopulating.DoWork += playlistPopulating_DoWork;
             playlistPopulating.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
 
+            // Initialzize tree view
+            treeLibrary.Nodes.Add("Library");
+            foreach (Song artist in db.Table<Song>().Distinct<Song>(new Song.ArtistComparator()))
+            {
+                TreeNode artistNode = new TreeNode();
+                artistNode.Text = artist.Artist;
+                foreach (Song album in db.Table<Song>().Where(s => s.Artist == artist.Artist).Distinct<Song>(new Song.AlbumComparator()))
+                {
+                    TreeNode albumNode = new TreeNode();
+                    albumNode.Text = album.Album;
+                    foreach (Song song in db.Table<Song>().Where(s => s.Artist == artist.Artist && s.Album == album.Album))
+                        albumNode.Nodes.Add(song.Title);
+                    artistNode.Nodes.Add(albumNode);
+                }
+                treeLibrary.Nodes[0].Nodes.Add(artistNode);
+            }
+
             // Start playlist
             playlistPopulating.RunWorkerAsync();
 
