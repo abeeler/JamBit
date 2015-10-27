@@ -23,6 +23,7 @@ namespace JamBit
         private OpenFileDialog openFileDialog;
         private SQLite.SQLiteConnection db;
         private RepeatMode playMode = RepeatMode.Loop;
+        private Random shuffleRandom = new Random();
         private Playlist currentPlaylist;
         private int playlistIndex = 1;
         private BackgroundWorker libraryScanner;
@@ -40,7 +41,7 @@ namespace JamBit
             // Establish DB connection
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
             
-            //db.DropTable<Song>();
+            db.DropTable<Song>();
 
             // Create tables if they do not already exist
             db.CreateTable<Song>();
@@ -153,6 +154,26 @@ namespace JamBit
                 // Loop the current playlist
                 // Will play the next song or the first in the playlist if at the end
                 case RepeatMode.Loop:
+                    btnNext_Click(this, new EventArgs());
+                    break;
+
+                // Repeat the current song
+                case RepeatMode.Repeat:
+                    MusicPlayer.OpenSong(MusicPlayer.curSong);
+                    break;
+
+                // Randomly select a song from the current playlist
+                case RepeatMode.Shuffle:
+                    // TODO: Improve shuffle algorithm
+                    playlistIndex = 1 + shuffleRandom.Next(currentPlaylist.Count);
+                    btnNext_Click(this, new EventArgs());
+                    break;
+
+                // Play through to the end of the playlist and stop
+                // After the last song, will load the first and pause the player
+                case RepeatMode.None:
+                    if (playlistIndex == currentPlaylist.Count)
+                        MusicPlayer.PauseSong();
                     btnNext_Click(this, new EventArgs());
                     break;
             }
@@ -396,6 +417,20 @@ namespace JamBit
             else
                 // Add the passed argument to the playlist
                 lstPlaylist.Items.Add((ListViewItem)e.UserState);
+        }
+
+        private void btnPlayMode_Click(object sender, EventArgs e)
+        {
+            // If at the last playmode, restart at the beginning
+            if (playMode == RepeatMode.Shuffle)
+                playMode = RepeatMode.None;
+
+            // Otherwise just go to the next playmode
+            else
+                playMode++;
+
+            // Update button text
+            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
         }
 
         #endregion

@@ -48,6 +48,7 @@
             this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrefLibFolders = new System.Windows.Forms.ToolStripMenuItem();
             this.treeLibrary = new System.Windows.Forms.TreeView();
+            this.btnPlayMode = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -174,7 +175,7 @@
             // 
             // btnPrevious
             // 
-            this.btnPrevious.Location = new System.Drawing.Point(52, 97);
+            this.btnPrevious.Location = new System.Drawing.Point(15, 97);
             this.btnPrevious.Name = "btnPrevious";
             this.btnPrevious.Size = new System.Drawing.Size(75, 23);
             this.btnPrevious.TabIndex = 12;
@@ -184,7 +185,7 @@
             // 
             // btnNext
             // 
-            this.btnNext.Location = new System.Drawing.Point(157, 97);
+            this.btnNext.Location = new System.Drawing.Point(104, 97);
             this.btnNext.Name = "btnNext";
             this.btnNext.Size = new System.Drawing.Size(75, 23);
             this.btnNext.TabIndex = 13;
@@ -240,11 +241,22 @@
             this.treeLibrary.Size = new System.Drawing.Size(483, 356);
             this.treeLibrary.TabIndex = 15;
             // 
+            // btnPlayMode
+            // 
+            this.btnPlayMode.Location = new System.Drawing.Point(197, 97);
+            this.btnPlayMode.Name = "btnPlayMode";
+            this.btnPlayMode.Size = new System.Drawing.Size(75, 23);
+            this.btnPlayMode.TabIndex = 16;
+            this.btnPlayMode.Text = "Loop";
+            this.btnPlayMode.UseVisualStyleBackColor = true;
+            this.btnPlayMode.Click += new System.EventHandler(this.btnPlayMode_Click);
+            // 
             // JamBitForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(773, 412);
+            this.Controls.Add(this.btnPlayMode);
             this.Controls.Add(this.treeLibrary);
             this.Controls.Add(this.btnNext);
             this.Controls.Add(this.btnPrevious);
@@ -290,6 +302,7 @@
         private System.Windows.Forms.ToolStripMenuItem preferencesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mnuPrefLibFolders;
         private System.Windows.Forms.TreeView treeLibrary;
+        private System.Windows.Forms.Button btnPlayMode;
     }
 }
 
