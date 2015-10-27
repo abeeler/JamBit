@@ -79,7 +79,9 @@ namespace JamBit
             playlistPopulating.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
 
             // Initialzize tree view
-            treeLibrary.Nodes.Add(new LibraryNode(LibraryNode.LibraryNodeType.Library));
+            LibraryNode libraryNode = new LibraryNode(LibraryNode.LibraryNodeType.Library);
+            libraryNode.Text = "Library";
+            treeLibrary.Nodes.Add(libraryNode);
             foreach (Song artist in db.Table<Song>().Distinct<Song>(new Song.ArtistComparator()))
             {
                 LibraryNode artistNode = new LibraryNode(LibraryNode.LibraryNodeType.Artist);
@@ -98,7 +100,7 @@ namespace JamBit
                     }
                     artistNode.Nodes.Add(albumNode);
                 }
-                treeLibrary.Nodes[0].Nodes.Add(artistNode);
+                libraryNode.Nodes.Add(artistNode);
             }
 
             treeLibrary.NodeMouseDoubleClick += treeLibrary_NodeMouseDoubleClick;
