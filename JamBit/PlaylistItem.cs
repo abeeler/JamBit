@@ -15,5 +15,13 @@ namespace JamBit
         public int PlaylistID { get; set; }
 
         public int SongID { get; set; }
+
+        public PlaylistItem() { }
+
+        public PlaylistItem(int playlistID, int songID)
+        {
+            this.PlaylistID = playlistID;
+            this.SongID = songID;
+        }
     }
 }

@@ -22,21 +22,7 @@ namespace JamBit
         [Ignore]
         public int Count { get { return _songs.Count; } }
 
-        /// <summary>
-        /// Initialize this playlist using the given database connection. 
-        /// Attempts to fill the list of songs using information in the database
-        /// </summary>
-        /// <param name="db">The database to use for intialization</param>
-        public void Initialize(SQLiteConnection db)
-        {
-            _songs.Clear();
-            try
-            {
-                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == ID))
-                    _songs.Add(pi.SongID);
-            }
-            catch (InvalidOperationException) { }         
-        }
+        public Playlist() { ID = 0; }
 
         /// <summary>
         /// Save the current state of the playlist back to the database
@@ -44,7 +30,20 @@ namespace JamBit
         /// <param name="db">The database to save to</param>
         public void SaveToDatabase(SQLiteConnection db)
         {
-            
+            List<int> songsSaved = new List<int>();
+            try
+            {
+                songsSaved = db.Table<PlaylistItem>().Where(pi => pi.PlaylistID == ID).ToList<PlaylistItem>().Select<PlaylistItem, int>(pi => pi.SongID) as List<int>;
+            } catch (Exception) { }
+
+            if (songsSaved == null) songsSaved = new List<int>();
+
+            foreach (int id in _songs.Except(songsSaved))
+                db.Insert(new PlaylistItem(ID, id));
+
+            foreach (int id in songsSaved.Except(_songs))
+                try { db.Delete(db.Get<PlaylistItem>(pi => pi.PlaylistID == ID && pi.SongID == id)); }
+                catch (Exception) { }
         }
     }
 }

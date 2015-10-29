@@ -48,10 +48,14 @@ namespace JamBit
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
             
             //db.DropTable<Song>();
+            //db.DropTable<Playlist>();
+            //db.DropTable<PlaylistItem>();
             //db.DropTable<RecentSong>();
 
             // Create tables if they do not already exist
             db.CreateTable<Song>();
+            db.CreateTable<Playlist>();
+            db.CreateTable<PlaylistItem>();
             db.CreateTable<RecentSong>();
 
             // Create concurrent queue for folder scanning
@@ -130,6 +134,21 @@ namespace JamBit
                 }
             }
             catch (SQLiteException) { }
+
+            LibraryNode playlistsNode = new LibraryNode(LibraryNode.LibraryNodeType.None);
+            playlistsNode.Text = "Playlists";
+            treeLibrary.Nodes.Add(playlistsNode);
+
+            try
+            {
+                foreach (Playlist p in db.Table<Playlist>())
+                {
+                    LibraryNode playlistNode = new LibraryNode(LibraryNode.LibraryNodeType.Playlist);
+                    playlistNode.Text = p.Name;
+                    playlistNode.DatabaseKey = p.ID;
+                    playlistsNode.Nodes.Add(playlistNode);
+                }
+            } catch (Exception) { }
 
             treeLibrary.NodeMouseDoubleClick += treeLibrary_NodeMouseDoubleClick;
             treeLibrary.MouseClick += treeLibrary_MouseClick;
@@ -266,7 +285,8 @@ namespace JamBit
 
         public void AddSongToPlaylist(int id)
         {
-            try { AddSongToPlaylist(db.Get<Song>(id)); }
+            AddSongToPlaylist(db.Get<Song>(id));
+            try {  }
             catch (System.InvalidOperationException) { }
         }
 
@@ -536,6 +556,13 @@ namespace JamBit
                         AddSongToPlaylist(s);
                     break;
                 case LibraryNode.LibraryNodeType.Playlist:
+                    clearPlaylistToolStripMenuItem_Click(this, new EventArgs());
+                    try
+                    {
+                        currentPlaylist = db.Get<Playlist>(node.DatabaseKey);
+                        foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
+                            AddSongToPlaylist(pi.SongID);
+                    } catch (Exception) { }
                     break;
                 case LibraryNode.LibraryNodeType.RecentlyPlayed:
                     try { 
@@ -578,12 +605,32 @@ namespace JamBit
             lastMouseDown = DateTime.Now;
         }
 
-        private void clearCurrentToolStripMenuItem_Click(object sender, EventArgs e)
+        private void clearPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MusicPlayer.CloseSong();
             currentPlaylist = new Playlist();
             lstPlaylist.Items.Clear();
             playlistIndex = -1;
+        }
+
+        private void savePlaylistToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentPlaylist.ID == 0)
+            {
+                savePlaylistAsToolStripMenuItem_Click(sender, e);
+                return;
+            }
+
+            db.Update(currentPlaylist);
+            currentPlaylist.SaveToDatabase(db);
+        }
+
+        private void savePlaylistAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            currentPlaylist.ID = 0;
+            currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter a name for this playlist", "Playlist Name");
+            db.Insert(currentPlaylist);
+            currentPlaylist.SaveToDatabase(db);
         }
 
         #endregion
