@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace JamBit
 {
-    class Song
+    public class Song
     {
         [PrimaryKey, AutoIncrement]
         public int ID
@@ -18,7 +18,7 @@ namespace JamBit
         }
 
         private string _fileName;
-        [MaxLength(380)]
+        [MaxLength(260)]
         public string FileName
         {
             get { return _fileName; }
@@ -28,8 +28,17 @@ namespace JamBit
                 if (Data != null)
                     Data.Dispose();
                 Data = TagLib.File.Create(_fileName);
+                Title = Data.Tag.Title;
+                Artist = Data.Tag.FirstPerformer;
+                Album = Data.Tag.Album;
             }
         }
+
+        public string Title { get; set; }
+
+        public string Artist { get; set; }
+
+        public string Album { get; set; }
 
         public int PlayCount { get; set; }
 
@@ -54,6 +63,45 @@ namespace JamBit
         public override string ToString()
         {
             return Data.Tag.Title;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != this.GetType())
+                return false;
+
+            Song s = obj as Song;
+
+            return this.Artist == s.Artist && this.Title == s.Title && this.Album == s.Album;
+        }
+
+        /// <summary>
+        /// Used to determine distinct artist names in the library
+        /// </summary>
+        public class ArtistComparator : IEqualityComparer<Song>
+        {
+            public bool Equals(Song x, Song y)
+            {
+                return x.Artist.ToLower() == y.Artist.ToLower();
+            }
+
+            public int GetHashCode(Song obj)
+            {
+                return obj.Artist.ToLower().GetHashCode();
+            }
+        }
+
+        public class AlbumComparator : IEqualityComparer<Song>
+        {
+            public bool Equals(Song x, Song y)
+            {
+                return x.Album == y.Album;
+            }
+
+            public int GetHashCode(Song obj)
+            {
+                return obj.Album.ToLower().GetHashCode();
+            }
         }
     }
 }

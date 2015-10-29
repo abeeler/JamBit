@@ -48,6 +48,13 @@
     <Compile Include="MarqueeLabel.Designer.cs">
       <DependentUpon>MarqueeLabel.cs</DependentUpon>
     </Compile>
+    <Compile Include="MultipleSelectTreeView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="MultipleSelectTreeView.Designer.cs">
+      <DependentUpon>MultipleSelectTreeView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Prompt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SlidableProgressBar.cs">
       <SubType>Component</SubType>

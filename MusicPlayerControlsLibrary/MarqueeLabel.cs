@@ -52,9 +52,16 @@ namespace MusicPlayerControlsLibrary
         {
             get { return cycleText; }
             set {
-                curText = 0;
                 cycleText = value;
-                lblText.Text = cycleText[0];
+                if (cycleText == null)
+                {
+                    cycleText = new string[] { "" };
+                    curText = 0;
+                }
+                else if (curText >= cycleText.Length)
+                    curText = cycleText.Length - 1;
+
+                lblText.Text = cycleText[curText];
             }
         }
 
@@ -79,9 +86,9 @@ namespace MusicPlayerControlsLibrary
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            base.OnMouseClick(e);
-            if (curText == cycleText.Length) curText = 0;
-            lblText.Text = cycleText[curText++];
+            base.OnMouseUp(e);
+            if (++curText == cycleText.Length) curText = 0;
+            lblText.Text = cycleText[curText];
         }
 
         protected override void OnMouseEnter(EventArgs e)
@@ -106,8 +113,8 @@ namespace MusicPlayerControlsLibrary
             else if (lblText.Right <= 0)
             {
                 lblText.Location = new Point(Width + 1, lblText.Location.Y);
-                if (curText == cycleText.Length) curText = 0;
-                lblText.Text = cycleText[curText++];
+                if (++curText == cycleText.Length) curText = 0;
+                lblText.Text = cycleText[curText];
             }
             else
                 lblText.Location = new Point(lblText.Location.X - 1, lblText.Location.Y);

@@ -24,7 +24,7 @@ namespace JamBit
             player.PlayStateChange += PlayStateChanged;
 
             playCheck = new Timer();
-            playCheck.Interval = 100;
+            playCheck.Interval = 150;
             playCheck.Tick += playCheck_Tick;
         }
 
@@ -45,10 +45,20 @@ namespace JamBit
             playCheck.Start();
         }
 
+        public static void CloseSong()
+        {
+            PauseSong();
+            curSong = null;
+            player.URL = null;
+        }
+
         public static void PlaySong()
         {
-            player.controls.play();
-            playing = true;
+            if (curSong != null)
+            {
+                player.controls.play();
+                playing = true;
+            }
         }
 
         public static void PauseSong()
