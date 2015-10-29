@@ -37,6 +37,7 @@
             this.clmTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.clmArtist = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.clmAlbum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.clmPlayCount = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnPrevious = new System.Windows.Forms.Button();
             this.btnNext = new System.Windows.Forms.Button();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
@@ -44,11 +45,14 @@
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrefLibFolders = new System.Windows.Forms.ToolStripMenuItem();
+            this.playlistsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clearCurrentToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.addNewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnPlayMode = new System.Windows.Forms.Button();
+            this.treeLibrary = new MusicPlayerControlsLibrary.MultipleSelectTreeView();
             this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
             this.prgVolume = new MusicPlayerControlsLibrary.SlidableProgressBar();
             this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
-            this.treeLibrary = new MusicPlayerControlsLibrary.MultipleSelectTreeView();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -65,7 +69,7 @@
             // lblSongLength
             // 
             this.lblSongLength.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.lblSongLength.Location = new System.Drawing.Point(238, 44);
+            this.lblSongLength.Location = new System.Drawing.Point(379, 44);
             this.lblSongLength.Name = "lblSongLength";
             this.lblSongLength.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.lblSongLength.Size = new System.Drawing.Size(34, 13);
@@ -109,14 +113,15 @@
             this.lstPlaylist.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.clmTitle,
             this.clmArtist,
-            this.clmAlbum});
+            this.clmAlbum,
+            this.clmPlayCount});
             this.lstPlaylist.FullRowSelect = true;
             this.lstPlaylist.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lstPlaylist.HideSelection = false;
             this.lstPlaylist.Location = new System.Drawing.Point(12, 126);
             this.lstPlaylist.MultiSelect = false;
             this.lstPlaylist.Name = "lstPlaylist";
-            this.lstPlaylist.Size = new System.Drawing.Size(260, 254);
+            this.lstPlaylist.Size = new System.Drawing.Size(401, 254);
             this.lstPlaylist.TabIndex = 11;
             this.lstPlaylist.UseCompatibleStateImageBehavior = false;
             this.lstPlaylist.View = System.Windows.Forms.View.Details;
@@ -136,6 +141,11 @@
             // 
             this.clmAlbum.Text = "Album";
             this.clmAlbum.Width = 93;
+            // 
+            // clmPlayCount
+            // 
+            this.clmPlayCount.Text = "Play Count";
+            this.clmPlayCount.Width = 201;
             // 
             // btnPrevious
             // 
@@ -161,7 +171,8 @@
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.preferencesToolStripMenuItem});
+            this.preferencesToolStripMenuItem,
+            this.playlistsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(773, 24);
@@ -198,6 +209,28 @@
             this.mnuPrefLibFolders.Text = "Library Folders";
             this.mnuPrefLibFolders.Click += new System.EventHandler(this.mnuPrefLibFolders_Click);
             // 
+            // playlistsToolStripMenuItem
+            // 
+            this.playlistsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.clearCurrentToolStripMenuItem,
+            this.addNewToolStripMenuItem});
+            this.playlistsToolStripMenuItem.Name = "playlistsToolStripMenuItem";
+            this.playlistsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
+            this.playlistsToolStripMenuItem.Text = "Playlists";
+            // 
+            // clearCurrentToolStripMenuItem
+            // 
+            this.clearCurrentToolStripMenuItem.Name = "clearCurrentToolStripMenuItem";
+            this.clearCurrentToolStripMenuItem.Size = new System.Drawing.Size(144, 22);
+            this.clearCurrentToolStripMenuItem.Text = "Clear Current";
+            this.clearCurrentToolStripMenuItem.Click += new System.EventHandler(this.clearCurrentToolStripMenuItem_Click);
+            // 
+            // addNewToolStripMenuItem
+            // 
+            this.addNewToolStripMenuItem.Name = "addNewToolStripMenuItem";
+            this.addNewToolStripMenuItem.Size = new System.Drawing.Size(144, 22);
+            this.addNewToolStripMenuItem.Text = "Add New";
+            // 
             // btnPlayMode
             // 
             this.btnPlayMode.Location = new System.Drawing.Point(197, 97);
@@ -207,6 +240,15 @@
             this.btnPlayMode.Text = "Loop";
             this.btnPlayMode.UseVisualStyleBackColor = true;
             this.btnPlayMode.Click += new System.EventHandler(this.btnPlayMode_Click);
+            // 
+            // treeLibrary
+            // 
+            this.treeLibrary.HideSelection = false;
+            this.treeLibrary.LastSelectedNode = null;
+            this.treeLibrary.Location = new System.Drawing.Point(419, 39);
+            this.treeLibrary.Name = "treeLibrary";
+            this.treeLibrary.Size = new System.Drawing.Size(342, 361);
+            this.treeLibrary.TabIndex = 17;
             // 
             // lblSongInformation
             // 
@@ -226,9 +268,8 @@
             // 
             this.prgVolume.Location = new System.Drawing.Point(12, 386);
             this.prgVolume.Name = "prgVolume";
-            this.prgVolume.Size = new System.Drawing.Size(260, 14);
+            this.prgVolume.Size = new System.Drawing.Size(401, 14);
             this.prgVolume.Step = 0;
-            this.prgVolume.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.prgVolume.TabIndex = 4;
             this.prgVolume.Value = 50;
             this.prgVolume.ValueSlidTo += new System.EventHandler(this.pgrVolume_ValueSlidTo);
@@ -238,19 +279,11 @@
             this.prgSongTime.Location = new System.Drawing.Point(52, 39);
             this.prgSongTime.Maximum = 1000;
             this.prgSongTime.Name = "prgSongTime";
-            this.prgSongTime.Size = new System.Drawing.Size(180, 23);
+            this.prgSongTime.Size = new System.Drawing.Size(321, 23);
             this.prgSongTime.Step = 0;
             this.prgSongTime.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.prgSongTime.TabIndex = 3;
             this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelectedValue);
-            // 
-            // treeLibrary
-            // 
-            this.treeLibrary.HideSelection = false;
-            this.treeLibrary.Location = new System.Drawing.Point(278, 39);
-            this.treeLibrary.Name = "treeLibrary";
-            this.treeLibrary.Size = new System.Drawing.Size(483, 361);
-            this.treeLibrary.TabIndex = 17;
             // 
             // JamBitForm
             // 
@@ -304,6 +337,10 @@
         private System.Windows.Forms.ToolStripMenuItem mnuPrefLibFolders;
         private System.Windows.Forms.Button btnPlayMode;
         private MusicPlayerControlsLibrary.MultipleSelectTreeView treeLibrary;
+        private System.Windows.Forms.ColumnHeader clmPlayCount;
+        private System.Windows.Forms.ToolStripMenuItem playlistsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem clearCurrentToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem addNewToolStripMenuItem;
     }
 }
 

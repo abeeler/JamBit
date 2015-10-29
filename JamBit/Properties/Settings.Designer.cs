@@ -45,5 +45,29 @@ namespace JamBit.Properties {
                 this["LibraryFolders"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int RecentlyPlayedIndex {
+            get {
+                return ((int)(this["RecentlyPlayedIndex"]));
+            }
+            set {
+                this["RecentlyPlayedIndex"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("50")]
+        public int RecentlyPlayedMax {
+            get {
+                return ((int)(this["RecentlyPlayedMax"]));
+            }
+            set {
+                this["RecentlyPlayedMax"] = value;
+            }
+        }
     }
 }

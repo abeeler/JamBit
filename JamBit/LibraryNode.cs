@@ -9,7 +9,7 @@ namespace JamBit
 {
     class LibraryNode : TreeNode
     {
-        public enum LibraryNodeType { Library, Playlist, Artist, Album, Song }
+        public enum LibraryNodeType { Library, RecentlyPlayed, Playlist, Artist, Album, Song }
 
         public LibraryNodeType LibraryType { get; private set; }
         public object DatabaseKey { get; set; }

@@ -51,7 +51,6 @@ namespace MusicPlayerControlsLibrary
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            base.OnMouseUp(e);
             if (!sliding)
                 return;
             sliding = false;
@@ -71,7 +70,7 @@ namespace MusicPlayerControlsLibrary
                 percent = 0;
             else
                 percent = (double)e.X / Width;            
-            SetValue((int)(percent * Maximum), true);
+            SetValue((int)Math.Round(percent * Maximum), true);
             if (ValueSlidTo != null)
                 ValueSlidTo.Invoke(this, new EventArgs());
         }

@@ -18,7 +18,7 @@ namespace JamBit
         }
 
         private string _fileName;
-        [MaxLength(380)]
+        [MaxLength(260)]
         public string FileName
         {
             get { return _fileName; }
