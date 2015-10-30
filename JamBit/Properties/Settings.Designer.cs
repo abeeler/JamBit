@@ -69,5 +69,29 @@ namespace JamBit.Properties {
                 this["RecentlyPlayedMax"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int LastPlaylistIndex {
+            get {
+                return ((int)(this["LastPlaylistIndex"]));
+            }
+            set {
+                this["LastPlaylistIndex"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int LastPlayMode {
+            get {
+                return ((int)(this["LastPlayMode"]));
+            }
+            set {
+                this["LastPlayMode"] = value;
+            }
+        }
     }
 }
