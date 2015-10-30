@@ -26,6 +26,7 @@ namespace JamBit
         private BackgroundWorker libraryScanner;
         private BackgroundWorker playlistPopulating;
         private ContextMenuStrip libraryOptions;
+        private ContextMenuStrip playlistOptions;
 
         private ConcurrentQueue<string> foldersToScan;
 
@@ -77,6 +78,11 @@ namespace JamBit
             libraryOptions = new ContextMenuStrip();
             libraryOptions.Items.Add("Add selection to current playlist");
             libraryOptions.ItemClicked += libraryOptions_ItemClick;
+
+            // Initialize the playlist options context menu
+            playlistOptions = new ContextMenuStrip();
+            playlistOptions.Items.Add("Remove selection from current playlist");
+            playlistOptions.ItemClicked += playlistOptions_ItemClick;
 
             // Initialize the background worker for scanning in files from library folders
             libraryScanner = new BackgroundWorker();
@@ -582,9 +588,22 @@ namespace JamBit
 
         private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
         {
-            if (e.ClickedItem.Text == "Add selection to current playlist")
+            if (e.ClickedItem == libraryOptions.Items[0])
                 foreach (TreeNode node in treeLibrary.SelectedNodes)
                     treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
+        }
+
+        private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == playlistOptions.Items[0])
+                for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
+                {
+                    if (playlistIndex == lstPlaylist.SelectedIndices[i])
+                        playlistIndex--;
+                    currentPlaylist.Songs.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                    lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                }
+                    
         }
 
         private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
@@ -634,5 +653,11 @@ namespace JamBit
         }
 
         #endregion
+
+        private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                playlistOptions.Show(sender as Control, e.Location);
+        }
     }
 }
