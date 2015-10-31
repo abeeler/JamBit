@@ -29,13 +29,11 @@ namespace MusicPlayerControlsLibrary
         {
             e.Cancel = true;
             base.OnBeforeSelect(e);
-
-            base.OnBeforeSelect(e);
         }
 
         protected override void OnNodeMouseClick(TreeNodeMouseClickEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && this.HitTest(e.Location).Location == TreeViewHitTestLocations.Label)
             {
                 if (ModifierKeys == Keys.Control)
                 {
