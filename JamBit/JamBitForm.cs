@@ -36,6 +36,7 @@ namespace JamBit
         private int playlistIndex = -1;
         private bool preventExpand = false;
         private DateTime lastMouseDown;
+        private List<int> shuffledSongs = new List<int>();
 
         #endregion
 
@@ -227,26 +228,32 @@ namespace JamBit
         /// Called when a song playing the music player reaches the end. 
         /// Determines which song plays next based on the current RepeatMode
         /// </summary>
-        public void SongEnded()
+        public void SongEnded(bool previous = false)
         {
+            if (shuffledSongs.Count == currentPlaylist.Count)
+                shuffledSongs.Clear();
+
             switch (playMode)
             {
                 // Loop the current playlist
                 // Will play the next song or the first in the playlist if at the end
                 case RepeatMode.Loop:
-                    btnNext_Click(this, new EventArgs());
-                    break;
-
-                // Repeat the current song
-                case RepeatMode.Repeat:
-                    OpenSong(MusicPlayer.curSong);
+                    if (previous && --playlistIndex == -1) playlistIndex = currentPlaylist.Count - 1;
+                    else if (++playlistIndex == currentPlaylist.Count) playlistIndex = 0;
                     break;
 
                 // Randomly select a song from the current playlist
                 case RepeatMode.Shuffle:
-                    // TODO: Improve shuffle algorithm
-                    playlistIndex = 1 + shuffleRandom.Next(currentPlaylist.Count);
-                    btnNext_Click(this, new EventArgs());
+                    if (previous && shuffledSongs.Count > 1)
+                    {
+                        playlistIndex = currentPlaylist.Songs.IndexOf(shuffledSongs[shuffledSongs.Count - 2]);
+                        shuffledSongs.RemoveRange(shuffledSongs.Count - 2, 2);
+                    }
+                    else
+                    {
+                        List<int> songsToPlay = currentPlaylist.Songs.Where(id => !shuffledSongs.Contains(id)).ToList();
+                        playlistIndex = currentPlaylist.Songs.IndexOf(songsToPlay[shuffleRandom.Next(songsToPlay.Count)]);
+                    }
                     break;
 
                 // Play through to the end of the playlist and stop
@@ -254,10 +261,10 @@ namespace JamBit
                 case RepeatMode.None:
                     if (playlistIndex >= currentPlaylist.Count - 1)
                         MusicPlayer.PauseSong();
-                    btnNext_Click(this, new EventArgs());
+                    playlistIndex = 0;
                     break;
             }
-            RefreshPlayer();
+            OpenSong();
         }
 
         /// <summary>
@@ -324,6 +331,7 @@ namespace JamBit
         {
             MusicPlayer.OpenSong(s);
             RefreshPlayer();
+            shuffledSongs.Add(s.ID);
             s.PlayCount++;
             db.Update(s);
 
@@ -357,7 +365,6 @@ namespace JamBit
                 }
 
             }
-            // TODO: Update playcount in playlist display
         }
 
         #endregion
@@ -400,10 +407,7 @@ namespace JamBit
         {
             // Play the current song
             if (playlistIndex == -1 && currentPlaylist.Count > 0)
-            {
-                playlistIndex = 0;
-                OpenSong();
-            }
+                SongEnded();
             MusicPlayer.PlaySong();
         }
 
@@ -434,23 +438,14 @@ namespace JamBit
 
         private void btnNext_Click(object sender, EventArgs e)
         {
-            // If there is more than one song in the playlist
-            if (currentPlaylist.Count > 1) {
-                // Open the next song in the playlist
-                if (++playlistIndex == currentPlaylist.Count) playlistIndex = 0;
-                OpenSong();
-            }
+            // Prematurely end the song
+            SongEnded();
         }
 
         private void btnPrevious_Click(object sender, EventArgs e)
         {
-            // If there is more than one song in the playlist
-            if (currentPlaylist.Count > 1)
-            {
-                // Open the previous song in the playlist
-                playlistIndex = playlistIndex <= 0 ? currentPlaylist.Count - 1 : playlistIndex - 1;
-                OpenSong();
-            }
+            // Prematurely end the song with the flag for previous
+            SongEnded(true);
         }
 
         #region Playlist ListView
@@ -559,8 +554,8 @@ namespace JamBit
         private void btnPlayMode_Click(object sender, EventArgs e)
         {
             // If at the last playmode, restart at the beginning
-            if (playMode == RepeatMode.Shuffle)
-                playMode = RepeatMode.None;
+            if (playMode == RepeatMode.None)
+                playMode = RepeatMode.Loop;
 
             // Otherwise just go to the next playmode
             else
