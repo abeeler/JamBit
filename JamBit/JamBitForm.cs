@@ -48,11 +48,8 @@ namespace JamBit
 
             // Establish DB connection
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
-            
-            //db.DropTable<Song>();
-            //db.DropTable<Playlist>();
-            //db.DropTable<PlaylistItem>();
-            //db.DropTable<RecentSong>();
+
+            //ResetApplication();
 
             // Create tables if they do not already exist
             db.CreateTable<Song>();
@@ -90,14 +87,8 @@ namespace JamBit
             libraryScanner.WorkerReportsProgress = true;
             libraryScanner.WorkerSupportsCancellation = true;
             libraryScanner.DoWork += libraryScanner_DoWork;
-            libraryScanner.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
-
-            // Initialize the background worker for populating the playlist from the database
-            playlistPopulating = new BackgroundWorker();
-            playlistPopulating.WorkerReportsProgress = true;
-            playlistPopulating.WorkerSupportsCancellation = true;
-            playlistPopulating.DoWork += playlistPopulating_DoWork;
-            playlistPopulating.ProgressChanged += playlistBackgroundWorker_ProgressChanged;
+            libraryScanner.ProgressChanged += libraryScanner_ProgressChanged;
+            libraryScanner.RunWorkerCompleted += libraryScanner_RunWorkerCompleted;
 
             // Initialzize tree view
             LibraryNode libraryNode = new LibraryNode(LibraryNode.LibraryNodeType.Library);
@@ -304,7 +295,10 @@ namespace JamBit
 
             // Start the scanner if it isn't already running
             if (!libraryScanner.IsBusy)
+            {
+                this.Cursor = Cursors.WaitCursor;
                 libraryScanner.RunWorkerAsync();
+            }                
         }
 
         public void AddSongToPlaylist(int id)
@@ -320,7 +314,7 @@ namespace JamBit
             {
                 currentPlaylist.Songs.Add(s.ID);
                 lstPlaylist.Items.Add(new ListViewItem(new string[] {
-                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album, s.PlayCount.ToString()
+                    s.Title, s.Artist, s.Album, s.PlayCount.ToString()
                 }));                
             }
         }
@@ -365,6 +359,19 @@ namespace JamBit
                 }
 
             }
+        }
+
+        public void ResetApplication()
+        {
+            db.DropTable<Song>();
+            db.DropTable<Playlist>();
+            db.DropTable<PlaylistItem>();
+            db.DropTable<RecentSong>();
+
+            Properties.Settings.Default.LastPlaylistIndex = 0;
+            Properties.Settings.Default.LastPlayMode = 0;
+            Properties.Settings.Default.RecentlyPlayedIndex = 1;
+            Properties.Settings.Default.Save();
         }
 
         #endregion
@@ -502,14 +509,30 @@ namespace JamBit
                             // Check for that song in the database
                             if (db.Find<Song>(dbSong => dbSong.Title == s.Title && dbSong.Artist == s.Artist) == null)
                             {
-                                // If the song is not in the database
-                                // Update the playlist
-                                libraryScanner.ReportProgress(0, new ListViewItem(new string[] {
-                                    s.Data.Tag.Title, s.Data.Tag.FirstPerformer, s.Data.Tag.Album
-                                }));
-
-                                // Add the song to the database
                                 db.Insert(s);
+
+                                LibraryNode artistNode = treeLibrary.Nodes[0].Nodes.Cast<TreeNode>().Where(tn => tn.Text.ToLower() == s.Artist.ToLower()).ToList().FirstOrDefault() as LibraryNode;
+                                if (artistNode == null)
+                                {
+                                    artistNode = new LibraryNode(LibraryNode.LibraryNodeType.Artist);
+                                    artistNode.Text = s.Artist;
+                                    artistNode.DatabaseKey = s.Artist;
+                                    libraryScanner.ReportProgress(0, new TreeNode[] { treeLibrary.Nodes[0], artistNode });
+                                }                                
+
+                                LibraryNode albumNode = artistNode.Nodes.Cast<TreeNode>().Where(tn => tn.Text.ToLower() == s.Album.ToLower()).ToList().FirstOrDefault() as LibraryNode;
+                                if (albumNode == null)
+                                {
+                                    albumNode = new LibraryNode(LibraryNode.LibraryNodeType.Album);
+                                    albumNode.Text = s.Album;
+                                    albumNode.DatabaseKey = s.Artist;
+                                    libraryScanner.ReportProgress(0, new TreeNode[] { artistNode, albumNode });
+                                }                                
+
+                                LibraryNode titleNode = new LibraryNode(LibraryNode.LibraryNodeType.Song);
+                                titleNode.Text = s.Title;
+                                titleNode.DatabaseKey = s.ID;
+                                libraryScanner.ReportProgress(0, new TreeNode[] { albumNode, titleNode });
                             }
                         }                        
                         
@@ -521,34 +544,15 @@ namespace JamBit
             }                
         }
 
-        private void playlistPopulating_DoWork(object sender, DoWorkEventArgs e)
+        private void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            // Update the form with a loading cursor
-            playlistPopulating.ReportProgress(1);
-
-            // Reset the current playlist
-            currentPlaylist = new Playlist();
-
-
-
-            // Return the cursor to normal
-            playlistPopulating.ReportProgress(2);
+            TreeNode[] nodes = e.UserState as TreeNode[];
+            nodes[0].Nodes.Add(nodes[1]);
         }
 
-        private void playlistBackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void libraryScanner_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            // If the state is 1
-            if (e.ProgressPercentage == 1)
-                // Change the cursor to a loading symbol
-                this.Cursor = Cursors.WaitCursor;
-            // If the state is 2
-            else if (e.ProgressPercentage == 2)
-                // Return the cursor to normal
-                this.Cursor = Cursors.Default;
-            // Otherwise
-            else
-                // Add the passed argument to the playlist
-                lstPlaylist.Items.Add((ListViewItem)e.UserState);
+            this.Cursor = Cursors.Default;
         }
 
         private void btnPlayMode_Click(object sender, EventArgs e)

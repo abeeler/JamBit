@@ -75,6 +75,11 @@ namespace JamBit
             return this.Artist == s.Artist && this.Title == s.Title && this.Album == s.Album;
         }
 
+        public override int GetHashCode()
+        {
+            return (Title + Artist + Album).GetHashCode();
+        }
+
         /// <summary>
         /// Used to determine distinct artist names in the library
         /// </summary>
