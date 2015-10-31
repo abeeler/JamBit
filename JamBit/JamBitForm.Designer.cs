@@ -43,6 +43,9 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
+            this.savePlaylistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.savePlaylistAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clearPlaylistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrefLibFolders = new System.Windows.Forms.ToolStripMenuItem();
             this.btnPlayMode = new System.Windows.Forms.Button();
@@ -50,9 +53,8 @@
             this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
             this.prgVolume = new MusicPlayerControlsLibrary.SlidableProgressBar();
             this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
-            this.savePlaylistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.savePlaylistAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.clearPlaylistToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.label1 = new System.Windows.Forms.Label();
+            this.lblPlaylistName = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -119,13 +121,13 @@
             this.lstPlaylist.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lstPlaylist.HideSelection = false;
             this.lstPlaylist.Location = new System.Drawing.Point(12, 126);
-            this.lstPlaylist.MultiSelect = false;
             this.lstPlaylist.Name = "lstPlaylist";
             this.lstPlaylist.Size = new System.Drawing.Size(401, 254);
             this.lstPlaylist.TabIndex = 11;
             this.lstPlaylist.UseCompatibleStateImageBehavior = false;
             this.lstPlaylist.View = System.Windows.Forms.View.Details;
             this.lstPlaylist.DoubleClick += new System.EventHandler(this.lstPlaylist_DoubleClick);
+            this.lstPlaylist.MouseClick += new System.Windows.Forms.MouseEventHandler(this.lstPlaylist_MouseClick);
             // 
             // clmTitle
             // 
@@ -193,8 +195,29 @@
             // 
             this.mnuFileOpen.Name = "mnuFileOpen";
             this.mnuFileOpen.Size = new System.Drawing.Size(154, 22);
-            this.mnuFileOpen.Text = "Open Files";
+            this.mnuFileOpen.Text = "Open File(s)";
             this.mnuFileOpen.Click += new System.EventHandler(this.mnuFileOpen_Click);
+            // 
+            // savePlaylistToolStripMenuItem
+            // 
+            this.savePlaylistToolStripMenuItem.Name = "savePlaylistToolStripMenuItem";
+            this.savePlaylistToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
+            this.savePlaylistToolStripMenuItem.Text = "Save Playlist";
+            this.savePlaylistToolStripMenuItem.Click += new System.EventHandler(this.savePlaylistToolStripMenuItem_Click);
+            // 
+            // savePlaylistAsToolStripMenuItem
+            // 
+            this.savePlaylistAsToolStripMenuItem.Name = "savePlaylistAsToolStripMenuItem";
+            this.savePlaylistAsToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
+            this.savePlaylistAsToolStripMenuItem.Text = "Save Playlist As";
+            this.savePlaylistAsToolStripMenuItem.Click += new System.EventHandler(this.savePlaylistAsToolStripMenuItem_Click);
+            // 
+            // clearPlaylistToolStripMenuItem
+            // 
+            this.clearPlaylistToolStripMenuItem.Name = "clearPlaylistToolStripMenuItem";
+            this.clearPlaylistToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
+            this.clearPlaylistToolStripMenuItem.Text = "Clear Playlist";
+            this.clearPlaylistToolStripMenuItem.Click += new System.EventHandler(this.clearPlaylistToolStripMenuItem_Click);
             // 
             // preferencesToolStripMenuItem
             // 
@@ -265,32 +288,31 @@
             this.prgSongTime.TabIndex = 3;
             this.prgSongTime.ValueSelected += new System.EventHandler(this.prgSongTime_SelectedValue);
             // 
-            // savePlaylistToolStripMenuItem
+            // label1
             // 
-            this.savePlaylistToolStripMenuItem.Name = "savePlaylistToolStripMenuItem";
-            this.savePlaylistToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
-            this.savePlaylistToolStripMenuItem.Text = "Save Playlist";
-            this.savePlaylistToolStripMenuItem.Click += new System.EventHandler(this.savePlaylistToolStripMenuItem_Click);
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(278, 71);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(56, 17);
+            this.label1.TabIndex = 18;
+            this.label1.Text = "Playlist:";
             // 
-            // savePlaylistAsToolStripMenuItem
+            // lblPlaylistName
             // 
-            this.savePlaylistAsToolStripMenuItem.Name = "savePlaylistAsToolStripMenuItem";
-            this.savePlaylistAsToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
-            this.savePlaylistAsToolStripMenuItem.Text = "Save Playlist As";
-            this.savePlaylistAsToolStripMenuItem.Click += new System.EventHandler(this.savePlaylistAsToolStripMenuItem_Click);
-            // 
-            // clearPlaylistToolStripMenuItem
-            // 
-            this.clearPlaylistToolStripMenuItem.Name = "clearPlaylistToolStripMenuItem";
-            this.clearPlaylistToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
-            this.clearPlaylistToolStripMenuItem.Text = "Clear Playlist";
-            this.clearPlaylistToolStripMenuItem.Click += new System.EventHandler(this.clearPlaylistToolStripMenuItem_Click);
+            this.lblPlaylistName.AutoSize = true;
+            this.lblPlaylistName.Location = new System.Drawing.Point(290, 102);
+            this.lblPlaylistName.Name = "lblPlaylistName";
+            this.lblPlaylistName.Size = new System.Drawing.Size(0, 13);
+            this.lblPlaylistName.TabIndex = 19;
             // 
             // JamBitForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(773, 412);
+            this.Controls.Add(this.lblPlaylistName);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.treeLibrary);
             this.Controls.Add(this.btnPlayMode);
             this.Controls.Add(this.btnNext);
@@ -342,6 +364,8 @@
         private System.Windows.Forms.ToolStripMenuItem savePlaylistToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem savePlaylistAsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clearPlaylistToolStripMenuItem;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblPlaylistName;
     }
 }
 

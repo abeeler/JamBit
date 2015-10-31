@@ -26,19 +26,21 @@ namespace JamBit
         private BackgroundWorker libraryScanner;
         private BackgroundWorker playlistPopulating;
         private ContextMenuStrip libraryOptions;
+        private ContextMenuStrip playlistOptions;
 
         private ConcurrentQueue<string> foldersToScan;
 
-        private RepeatMode playMode = RepeatMode.Loop;
+        private RepeatMode playMode;
         private Random shuffleRandom = new Random();
         private Playlist currentPlaylist = new Playlist();
         private int playlistIndex = -1;
         private bool preventExpand = false;
         private DateTime lastMouseDown;
+        private List<int> shuffledSongs = new List<int>();
 
         #endregion
 
-        enum RepeatMode { None, Loop, Repeat, Shuffle }
+        enum RepeatMode { Loop, Repeat, Shuffle, None }
 
         public JamBitForm()
         {
@@ -77,6 +79,11 @@ namespace JamBit
             libraryOptions = new ContextMenuStrip();
             libraryOptions.Items.Add("Add selection to current playlist");
             libraryOptions.ItemClicked += libraryOptions_ItemClick;
+
+            // Initialize the playlist options context menu
+            playlistOptions = new ContextMenuStrip();
+            playlistOptions.Items.Add("Remove selection from current playlist");
+            playlistOptions.ItemClicked += playlistOptions_ItemClick;
 
             // Initialize the background worker for scanning in files from library folders
             libraryScanner = new BackgroundWorker();
@@ -135,7 +142,7 @@ namespace JamBit
             }
             catch (SQLiteException) { }
 
-            LibraryNode playlistsNode = new LibraryNode(LibraryNode.LibraryNodeType.None);
+            LibraryNode playlistsNode = new LibraryNode(LibraryNode.LibraryNodeType.Playlists);
             playlistsNode.Text = "Playlists";
             treeLibrary.Nodes.Add(playlistsNode);
 
@@ -155,7 +162,18 @@ namespace JamBit
             treeLibrary.MouseDown += treeLibrary_MouseDown;
             treeLibrary.BeforeExpand += treeLibrary_BeforeExpand;
 
-            // Start playlist
+            // Load last playlist opened
+            if (Properties.Settings.Default.LastPlaylistIndex > 0)
+            {
+                currentPlaylist = db.Get<Playlist>(Properties.Settings.Default.LastPlaylistIndex);
+                lblPlaylistName.Text = currentPlaylist.Name;
+                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
+                    AddSongToPlaylist(pi.SongID);
+            }
+
+            // Load last play mode used
+            playMode = (RepeatMode)Properties.Settings.Default.LastPlayMode;
+            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
 
             // Initialize timer to update visual representations of song position
             checkTime = new Timer();
@@ -210,26 +228,32 @@ namespace JamBit
         /// Called when a song playing the music player reaches the end. 
         /// Determines which song plays next based on the current RepeatMode
         /// </summary>
-        public void SongEnded()
+        public void SongEnded(bool previous = false)
         {
+            if (shuffledSongs.Count == currentPlaylist.Count)
+                shuffledSongs.Clear();
+
             switch (playMode)
             {
                 // Loop the current playlist
                 // Will play the next song or the first in the playlist if at the end
                 case RepeatMode.Loop:
-                    btnNext_Click(this, new EventArgs());
-                    break;
-
-                // Repeat the current song
-                case RepeatMode.Repeat:
-                    OpenSong(MusicPlayer.curSong);
+                    if (previous && --playlistIndex == -1) playlistIndex = currentPlaylist.Count - 1;
+                    else if (++playlistIndex == currentPlaylist.Count) playlistIndex = 0;
                     break;
 
                 // Randomly select a song from the current playlist
                 case RepeatMode.Shuffle:
-                    // TODO: Improve shuffle algorithm
-                    playlistIndex = 1 + shuffleRandom.Next(currentPlaylist.Count);
-                    btnNext_Click(this, new EventArgs());
+                    if (previous && shuffledSongs.Count > 1)
+                    {
+                        playlistIndex = currentPlaylist.Songs.IndexOf(shuffledSongs[shuffledSongs.Count - 2]);
+                        shuffledSongs.RemoveRange(shuffledSongs.Count - 2, 2);
+                    }
+                    else
+                    {
+                        List<int> songsToPlay = currentPlaylist.Songs.Where(id => !shuffledSongs.Contains(id)).ToList();
+                        playlistIndex = currentPlaylist.Songs.IndexOf(songsToPlay[shuffleRandom.Next(songsToPlay.Count)]);
+                    }
                     break;
 
                 // Play through to the end of the playlist and stop
@@ -237,10 +261,10 @@ namespace JamBit
                 case RepeatMode.None:
                     if (playlistIndex >= currentPlaylist.Count - 1)
                         MusicPlayer.PauseSong();
-                    btnNext_Click(this, new EventArgs());
+                    playlistIndex = 0;
                     break;
             }
-            RefreshPlayer();
+            OpenSong();
         }
 
         /// <summary>
@@ -307,6 +331,7 @@ namespace JamBit
         {
             MusicPlayer.OpenSong(s);
             RefreshPlayer();
+            shuffledSongs.Add(s.ID);
             s.PlayCount++;
             db.Update(s);
 
@@ -329,14 +354,17 @@ namespace JamBit
                 else
                 {
                     if (Properties.Settings.Default.RecentlyPlayedIndex == Properties.Settings.Default.RecentlyPlayedMax + 1)
+                    {
                         Properties.Settings.Default.RecentlyPlayedIndex = 1;
+                        Properties.Settings.Default.Save();
+                    }
+                        
                     RecentSong toUpdate = db.Get<RecentSong>(Properties.Settings.Default.RecentlyPlayedIndex++);
                     toUpdate.SongID = s.ID;
                     db.Update(toUpdate);
                 }
 
             }
-            // TODO: Update playcount in playlist display
         }
 
         #endregion
@@ -379,10 +407,7 @@ namespace JamBit
         {
             // Play the current song
             if (playlistIndex == -1 && currentPlaylist.Count > 0)
-            {
-                playlistIndex = 0;
-                OpenSong();
-            }
+                SongEnded();
             MusicPlayer.PlaySong();
         }
 
@@ -413,23 +438,22 @@ namespace JamBit
 
         private void btnNext_Click(object sender, EventArgs e)
         {
-            // If there is more than one song in the playlist
-            if (currentPlaylist.Count > 1) {
-                // Open the next song in the playlist
-                if (++playlistIndex == currentPlaylist.Count) playlistIndex = 0;
-                OpenSong();
-            }
+            // Prematurely end the song
+            SongEnded();
         }
 
         private void btnPrevious_Click(object sender, EventArgs e)
         {
-            // If there is more than one song in the playlist
-            if (currentPlaylist.Count > 1)
-            {
-                // Open the previous song in the playlist
-                playlistIndex = playlistIndex <= 0 ? currentPlaylist.Count - 1 : playlistIndex - 1;
-                OpenSong();
-            }
+            // Prematurely end the song with the flag for previous
+            SongEnded(true);
+        }
+
+        #region Playlist ListView
+
+        private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                playlistOptions.Show(sender as Control, e.Location);
         }
 
         private void lstPlaylist_DoubleClick(object sender, EventArgs e)
@@ -442,6 +466,8 @@ namespace JamBit
                 OpenSong();
             }
         }
+
+        #endregion
 
         private void mnuFileOpen_Click(object sender, EventArgs e)
         {
@@ -528,8 +554,8 @@ namespace JamBit
         private void btnPlayMode_Click(object sender, EventArgs e)
         {
             // If at the last playmode, restart at the beginning
-            if (playMode == RepeatMode.Shuffle)
-                playMode = RepeatMode.None;
+            if (playMode == RepeatMode.None)
+                playMode = RepeatMode.Loop;
 
             // Otherwise just go to the next playmode
             else
@@ -537,10 +563,51 @@ namespace JamBit
 
             // Update button text
             btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
+
+            Properties.Settings.Default.LastPlayMode = (int)playMode;
+            Properties.Settings.Default.Save();
+        }
+
+        private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == libraryOptions.Items[0])
+                foreach (TreeNode node in treeLibrary.SelectedNodes)
+                    treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
+        }
+
+        private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == playlistOptions.Items[0])
+                for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
+                {
+                    if (playlistIndex == lstPlaylist.SelectedIndices[i])
+                        playlistIndex--;
+                    currentPlaylist.Songs.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                    lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                }                    
+        }
+
+        #region Library TreeView
+
+        private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                switch ((treeLibrary.GetNodeAt(e.Location) as LibraryNode).LibraryType)
+                {
+                    case LibraryNode.LibraryNodeType.Playlists:
+                        break;
+                    default:
+                        libraryOptions.Show(sender as Control, e.Location);
+                        break;
+                }
+                
         }
 
         private void treeLibrary_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+            if (treeLibrary.HitTest(e.Location).Location == TreeViewHitTestLocations.PlusMinus)
+                return;
+
             LibraryNode node = e.Node as LibraryNode;
             switch (node.LibraryType)
             {
@@ -560,37 +627,31 @@ namespace JamBit
                     try
                     {
                         currentPlaylist = db.Get<Playlist>(node.DatabaseKey);
+                        lblPlaylistName.Text = currentPlaylist.Name;
+                        Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
+                        Properties.Settings.Default.Save();
                         foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
                             AddSongToPlaylist(pi.SongID);
-                    } catch (Exception) { }
+                    }
+                    catch (Exception) { }
                     break;
                 case LibraryNode.LibraryNodeType.RecentlyPlayed:
-                    try { 
+                    try
+                    {
                         foreach (RecentSong rs in db.Table<RecentSong>())
                             AddSongToPlaylist(db.Get<Song>(rs.SongID));
                     }
                     catch (SQLiteException) { }
                     break;
                 case LibraryNode.LibraryNodeType.Library:
-                    try {
+                    try
+                    {
                         foreach (Song s in db.Table<Song>())
                             AddSongToPlaylist(s);
-                    } catch (SQLiteException) { }
+                    }
+                    catch (SQLiteException) { }
                     break;
             }
-        }
-
-        private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
-        {
-            if (e.ClickedItem.Text == "Add selection to current playlist")
-                foreach (TreeNode node in treeLibrary.SelectedNodes)
-                    treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
-        }
-
-        private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-                libraryOptions.Show(sender as Control, e.Location);
         }
 
         private void treeLibrary_BeforeExpand(object sender, TreeViewCancelEventArgs e)
@@ -601,16 +662,24 @@ namespace JamBit
 
         private void treeLibrary_MouseDown(object sender, MouseEventArgs e)
         {
-            preventExpand = (int)DateTime.Now.Subtract(lastMouseDown).TotalMilliseconds < SystemInformation.DoubleClickTime;
-            lastMouseDown = DateTime.Now;
+            if (treeLibrary.HitTest(e.Location).Location != TreeViewHitTestLocations.PlusMinus)
+            {
+                preventExpand = (int)DateTime.Now.Subtract(lastMouseDown).TotalMilliseconds < SystemInformation.DoubleClickTime;
+                lastMouseDown = DateTime.Now;
+            }
         }
+
+        #endregion
 
         private void clearPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MusicPlayer.CloseSong();
             currentPlaylist = new Playlist();
+            lblPlaylistName.Text = "";
             lstPlaylist.Items.Clear();
             playlistIndex = -1;
+            Properties.Settings.Default.LastPlaylistIndex = 0;
+            Properties.Settings.Default.Save();
         }
 
         private void savePlaylistToolStripMenuItem_Click(object sender, EventArgs e)
@@ -631,6 +700,7 @@ namespace JamBit
             currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter a name for this playlist", "Playlist Name");
             db.Insert(currentPlaylist);
             currentPlaylist.SaveToDatabase(db);
+            lblPlaylistName.Text = currentPlaylist.Name;
         }
 
         #endregion

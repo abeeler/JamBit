@@ -33,17 +33,19 @@ namespace JamBit
             List<int> songsSaved = new List<int>();
             try
             {
-                songsSaved = db.Table<PlaylistItem>().Where(pi => pi.PlaylistID == ID).ToList<PlaylistItem>().Select<PlaylistItem, int>(pi => pi.SongID) as List<int>;
+                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where(pi => pi.PlaylistID == ID))
+                    songsSaved.Add(pi.SongID);
             } catch (Exception) { }
-
-            if (songsSaved == null) songsSaved = new List<int>();
 
             foreach (int id in _songs.Except(songsSaved))
                 db.Insert(new PlaylistItem(ID, id));
 
             foreach (int id in songsSaved.Except(_songs))
-                try { db.Delete(db.Get<PlaylistItem>(pi => pi.PlaylistID == ID && pi.SongID == id)); }
-                catch (Exception) { }
+            {
+                PlaylistItem toDelete = db.Get<PlaylistItem>(pi => pi.PlaylistID == ID && pi.SongID == id);
+                db.Delete(toDelete);
+            }
+                
         }
     }
 }
