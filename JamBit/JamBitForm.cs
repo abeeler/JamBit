@@ -152,6 +152,7 @@ namespace JamBit
             treeLibrary.MouseClick += treeLibrary_MouseClick;
             treeLibrary.MouseDown += treeLibrary_MouseDown;
             treeLibrary.BeforeExpand += treeLibrary_BeforeExpand;
+            treeLibrary.BeforeCollapse += treeLibrary_BeforeCollapse;
 
             // Load last playlist opened
             if (Properties.Settings.Default.LastPlaylistIndex > 0)
@@ -663,6 +664,12 @@ namespace JamBit
         }
 
         private void treeLibrary_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        {
+            e.Cancel = preventExpand;
+            preventExpand = false;
+        }
+
+        private void treeLibrary_BeforeCollapse(object sender, TreeViewCancelEventArgs e)
         {
             e.Cancel = preventExpand;
             preventExpand = false;
