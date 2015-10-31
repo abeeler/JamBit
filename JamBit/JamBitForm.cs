@@ -221,7 +221,7 @@ namespace JamBit
         /// </summary>
         public void SongEnded(bool previous = false)
         {
-            if (shuffledSongs.Count == currentPlaylist.Count)
+            if (shuffledSongs.Count >= currentPlaylist.Count)
                 shuffledSongs.Clear();
 
             switch (playMode)
@@ -325,9 +325,11 @@ namespace JamBit
         {
             MusicPlayer.OpenSong(s);
             RefreshPlayer();
-            shuffledSongs.Add(s.ID);
             s.PlayCount++;
             db.Update(s);
+
+            if (!shuffledSongs.Contains(s.ID))
+                shuffledSongs.Add(s.ID);
 
             lstPlaylist.Items[playlistIndex].SubItems[3] = 
                 new ListViewItem.ListViewSubItem(lstPlaylist.Items[playlistIndex], s.PlayCount.ToString());
@@ -586,6 +588,7 @@ namespace JamBit
                 {
                     if (playlistIndex == lstPlaylist.SelectedIndices[i])
                         playlistIndex--;
+                    shuffledSongs.Remove(currentPlaylist.Songs[lstPlaylist.SelectedIndices[i]]);
                     currentPlaylist.Songs.RemoveAt(lstPlaylist.SelectedIndices[i]);
                     lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
                 }                    
@@ -631,6 +634,7 @@ namespace JamBit
                     try
                     {
                         currentPlaylist = db.Get<Playlist>(node.DatabaseKey);
+                        shuffledSongs.Clear();
                         lblPlaylistName.Text = currentPlaylist.Name;
                         Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
                         Properties.Settings.Default.Save();
@@ -679,6 +683,7 @@ namespace JamBit
         {
             MusicPlayer.CloseSong();
             currentPlaylist = new Playlist();
+            shuffledSongs.Clear();
             lblPlaylistName.Text = "";
             lstPlaylist.Items.Clear();
             playlistIndex = -1;
