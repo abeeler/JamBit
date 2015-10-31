@@ -381,16 +381,55 @@ namespace JamBit
 
         #region Control Event Methods
 
-        private void checkTime_Tick(object sender, EventArgs e)
+        #region Playback Control Event Methods
+
+        private void btnPlay_Click(object sender, EventArgs e)
         {
-            // Get the current position of the song in seconds
-            int seconds = (int)MusicPlayer.CurrentTime();
+            // Play the current song
+            if (playlistIndex == -1 && currentPlaylist.Count > 0)
+                SongEnded();
+            MusicPlayer.PlaySong();
+        }
 
-            // Update the label using an appropriate format
-            lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
+        private void btnPause_Click(object sender, EventArgs e)
+        {
+            // Pause the current song
+            MusicPlayer.PauseSong();
+        }
 
-            // Update the progress bar to the current position
-            prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
+        private void btnOpen_Click(object sender, EventArgs e)
+        {
+            // Show the dialog for opening new files
+            openFileDialog.ShowDialog();
+        }
+
+        private void btnNext_Click(object sender, EventArgs e)
+        {
+            // Prematurely end the song
+            SongEnded();
+        }
+
+        private void btnPrevious_Click(object sender, EventArgs e)
+        {
+            // Prematurely end the song with the flag for previous
+            SongEnded(true);
+        }
+
+        private void btnPlayMode_Click(object sender, EventArgs e)
+        {
+            // If at the last playmode, restart at the beginning
+            if (playMode == RepeatMode.None)
+                playMode = RepeatMode.Loop;
+
+            // Otherwise just go to the next playmode
+            else
+                playMode++;
+
+            // Update button text
+            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
+
+            Properties.Settings.Default.LastPlayMode = (int)playMode;
+            Properties.Settings.Default.Save();
         }
 
         private void prgSongTime_SelectedValue(object sender, EventArgs e)
@@ -413,24 +452,20 @@ namespace JamBit
             Properties.Settings.Default.Save();
         }
 
-        private void btnPlay_Click(object sender, EventArgs e)
-        {
-            // Play the current song
-            if (playlistIndex == -1 && currentPlaylist.Count > 0)
-                SongEnded();
-            MusicPlayer.PlaySong();
-        }
+        #endregion
 
-        private void btnPause_Click(object sender, EventArgs e)
-        {
-            // Pause the current song
-            MusicPlayer.PauseSong();
-        }
+        #region Programmed Control Event Methods
 
-        private void btnOpen_Click(object sender, EventArgs e)
+        private void checkTime_Tick(object sender, EventArgs e)
         {
-            // Show the dialog for opening new files
-            openFileDialog.ShowDialog();
+            // Get the current position of the song in seconds
+            int seconds = (int)MusicPlayer.CurrentTime();
+
+            // Update the label using an appropriate format
+            lblCurrentTime.Text = String.Format("{0}:{1:D2}", seconds / 60, seconds % 60);
+
+            // Update the progress bar to the current position
+            prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
         }
 
         private void openFileDialog_OnFileOk(object sender, CancelEventArgs e)
@@ -444,51 +479,6 @@ namespace JamBit
         {
             // Safely remove database connection from memory
             db.Dispose();
-        }
-
-        private void btnNext_Click(object sender, EventArgs e)
-        {
-            // Prematurely end the song
-            SongEnded();
-        }
-
-        private void btnPrevious_Click(object sender, EventArgs e)
-        {
-            // Prematurely end the song with the flag for previous
-            SongEnded(true);
-        }
-
-        #region Playlist ListView
-
-        private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-                playlistOptions.Show(sender as Control, e.Location);
-        }
-
-        private void lstPlaylist_DoubleClick(object sender, EventArgs e)
-        {
-            // If there is a selection in the list of songs in the playlist
-            if (lstPlaylist.SelectedIndices.Count == 1 && playlistIndex != lstPlaylist.SelectedIndices[0])
-            {
-                // Open the selected song
-                playlistIndex = lstPlaylist.SelectedIndices[0];
-                OpenSong();
-            }
-        }
-
-        #endregion
-
-        private void mnuFileOpen_Click(object sender, EventArgs e)
-        {
-            // Opens the dialog for opening new song files
-            btnOpen_Click(sender, e);
-        }
-
-        private void mnuPrefLibFolders_Click(object sender, EventArgs e)
-        {
-            // Show the options form
-            new OptionsForm(this).Show();
         }
 
         private void libraryScanner_DoWork(object sender, DoWorkEventArgs e)
@@ -521,7 +511,7 @@ namespace JamBit
                                     artistNode.Text = s.Artist;
                                     artistNode.DatabaseKey = s.Artist;
                                     libraryScanner.ReportProgress(0, new TreeNode[] { treeLibrary.Nodes[0], artistNode });
-                                }                                
+                                }
 
                                 LibraryNode albumNode = artistNode.Nodes.Cast<TreeNode>().Where(tn => tn.Text.ToLower() == s.Album.ToLower()).ToList().FirstOrDefault() as LibraryNode;
                                 if (albumNode == null)
@@ -530,21 +520,21 @@ namespace JamBit
                                     albumNode.Text = s.Album;
                                     albumNode.DatabaseKey = s.Artist;
                                     libraryScanner.ReportProgress(0, new TreeNode[] { artistNode, albumNode });
-                                }                                
+                                }
 
                                 LibraryNode titleNode = new LibraryNode(LibraryNode.LibraryNodeType.Song);
                                 titleNode.Text = s.Title;
                                 titleNode.DatabaseKey = s.ID;
                                 libraryScanner.ReportProgress(0, new TreeNode[] { albumNode, titleNode });
                             }
-                        }                        
-                        
+                        }
+
                         // If the filename is too long
                         catch (System.IO.PathTooLongException) { }
                         if (s.Data != null)
                             s.Data.Dispose();
                     }
-            }                
+            }
         }
 
         private void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -558,22 +548,79 @@ namespace JamBit
             this.Cursor = Cursors.Default;
         }
 
-        private void btnPlayMode_Click(object sender, EventArgs e)
+        #endregion
+
+        #region Playlist ListView
+
+        private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
         {
-            // If at the last playmode, restart at the beginning
-            if (playMode == RepeatMode.None)
-                playMode = RepeatMode.Loop;
+            if (e.Button == MouseButtons.Right)
+                playlistOptions.Show(sender as Control, e.Location);
+        }
 
-            // Otherwise just go to the next playmode
-            else
-                playMode++;
+        private void lstPlaylist_DoubleClick(object sender, EventArgs e)
+        {
+            // If there is a selection in the list of songs in the playlist
+            if (lstPlaylist.SelectedIndices.Count == 1 && playlistIndex != lstPlaylist.SelectedIndices[0])
+            {
+                // Open the selected song
+                playlistIndex = lstPlaylist.SelectedIndices[0];
+                OpenSong();
+            }
+        }
 
-            // Update button text
-            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
+        #endregion
 
-            Properties.Settings.Default.LastPlayMode = (int)playMode;
+        #region Menu Event Methods
+
+        private void mnuFileOpen_Click(object sender, EventArgs e)
+        {
+            // Opens the dialog for opening new song files
+            btnOpen_Click(sender, e);
+        }
+
+        private void mnuPrefLibFolders_Click(object sender, EventArgs e)
+        {
+            // Show the options form
+            new OptionsForm(this).Show();
+        }
+
+        private void clearPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MusicPlayer.CloseSong();
+            currentPlaylist = new Playlist();
+            shuffledSongs.Clear();
+            lblPlaylistName.Text = "";
+            lstPlaylist.Items.Clear();
+            playlistIndex = -1;
+            Properties.Settings.Default.LastPlaylistIndex = 0;
             Properties.Settings.Default.Save();
         }
+
+        private void savePlaylistToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentPlaylist.ID == 0)
+            {
+                savePlaylistAsToolStripMenuItem_Click(sender, e);
+                return;
+            }
+
+            db.Update(currentPlaylist);
+            currentPlaylist.SaveToDatabase(db);
+        }
+
+        private void savePlaylistAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            currentPlaylist.ID = 0;
+            currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter a name for this playlist", "Playlist Name");
+            db.Insert(currentPlaylist);
+            currentPlaylist.SaveToDatabase(db);
+            lblPlaylistName.Text = currentPlaylist.Name;
+        }
+
+        #endregion
+
+        #region Context Menu Event Methods
 
         private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
         {
@@ -594,6 +641,8 @@ namespace JamBit
                     lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
                 }                    
         }
+
+        #endregion
 
         #region Library TreeView
 
@@ -684,40 +733,7 @@ namespace JamBit
             }
         }
 
-        #endregion
-
-        private void clearPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            MusicPlayer.CloseSong();
-            currentPlaylist = new Playlist();
-            shuffledSongs.Clear();
-            lblPlaylistName.Text = "";
-            lstPlaylist.Items.Clear();
-            playlistIndex = -1;
-            Properties.Settings.Default.LastPlaylistIndex = 0;
-            Properties.Settings.Default.Save();
-        }
-
-        private void savePlaylistToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (currentPlaylist.ID == 0)
-            {
-                savePlaylistAsToolStripMenuItem_Click(sender, e);
-                return;
-            }
-
-            db.Update(currentPlaylist);
-            currentPlaylist.SaveToDatabase(db);
-        }
-
-        private void savePlaylistAsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            currentPlaylist.ID = 0;
-            currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter a name for this playlist", "Playlist Name");
-            db.Insert(currentPlaylist);
-            currentPlaylist.SaveToDatabase(db);
-            lblPlaylistName.Text = currentPlaylist.Name;
-        }
+        #endregion        
 
         #endregion
     }
