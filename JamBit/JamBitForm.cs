@@ -453,6 +453,14 @@ namespace JamBit
             }
         }
 
+        #region Playlist ListView
+
+        private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                playlistOptions.Show(sender as Control, e.Location);
+        }
+
         private void lstPlaylist_DoubleClick(object sender, EventArgs e)
         {
             // If there is a selection in the list of songs in the playlist
@@ -463,6 +471,8 @@ namespace JamBit
                 OpenSong();
             }
         }
+
+        #endregion
 
         private void mnuFileOpen_Click(object sender, EventArgs e)
         {
@@ -563,8 +573,46 @@ namespace JamBit
             Properties.Settings.Default.Save();
         }
 
+        private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == libraryOptions.Items[0])
+                foreach (TreeNode node in treeLibrary.SelectedNodes)
+                    treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
+        }
+
+        private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == playlistOptions.Items[0])
+                for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
+                {
+                    if (playlistIndex == lstPlaylist.SelectedIndices[i])
+                        playlistIndex--;
+                    currentPlaylist.Songs.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                    lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                }                    
+        }
+
+        #region Library TreeView
+
+        private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+                switch ((treeLibrary.GetNodeAt(e.Location) as LibraryNode).LibraryType)
+                {
+                    case LibraryNode.LibraryNodeType.Playlists:
+                        break;
+                    default:
+                        libraryOptions.Show(sender as Control, e.Location);
+                        break;
+                }
+                
+        }
+
         private void treeLibrary_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+            if (treeLibrary.HitTest(e.Location).Location == TreeViewHitTestLocations.PlusMinus)
+                return;
+
             LibraryNode node = e.Node as LibraryNode;
             switch (node.LibraryType)
             {
@@ -589,55 +637,26 @@ namespace JamBit
                         Properties.Settings.Default.Save();
                         foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
                             AddSongToPlaylist(pi.SongID);
-                    } catch (Exception) { }
+                    }
+                    catch (Exception) { }
                     break;
                 case LibraryNode.LibraryNodeType.RecentlyPlayed:
-                    try { 
+                    try
+                    {
                         foreach (RecentSong rs in db.Table<RecentSong>())
                             AddSongToPlaylist(db.Get<Song>(rs.SongID));
                     }
                     catch (SQLiteException) { }
                     break;
                 case LibraryNode.LibraryNodeType.Library:
-                    try {
+                    try
+                    {
                         foreach (Song s in db.Table<Song>())
                             AddSongToPlaylist(s);
-                    } catch (SQLiteException) { }
+                    }
+                    catch (SQLiteException) { }
                     break;
             }
-        }
-
-        private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
-        {
-            if (e.ClickedItem == libraryOptions.Items[0])
-                foreach (TreeNode node in treeLibrary.SelectedNodes)
-                    treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
-        }
-
-        private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
-        {
-            if (e.ClickedItem == playlistOptions.Items[0])
-                for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
-                {
-                    if (playlistIndex == lstPlaylist.SelectedIndices[i])
-                        playlistIndex--;
-                    currentPlaylist.Songs.RemoveAt(lstPlaylist.SelectedIndices[i]);
-                    lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
-                }                    
-        }
-
-        private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-                switch ((treeLibrary.GetNodeAt(e.Location) as LibraryNode).LibraryType)
-                {
-                    case LibraryNode.LibraryNodeType.Playlists:
-                        break;
-                    default:
-                        libraryOptions.Show(sender as Control, e.Location);
-                        break;
-                }
-                
         }
 
         private void treeLibrary_BeforeExpand(object sender, TreeViewCancelEventArgs e)
@@ -648,10 +667,14 @@ namespace JamBit
 
         private void treeLibrary_MouseDown(object sender, MouseEventArgs e)
         {
-            // TODO: ignore check if clicking the + symbol
-            preventExpand = (int)DateTime.Now.Subtract(lastMouseDown).TotalMilliseconds < SystemInformation.DoubleClickTime;
-            lastMouseDown = DateTime.Now;
+            if (treeLibrary.HitTest(e.Location).Location != TreeViewHitTestLocations.PlusMinus)
+            {
+                preventExpand = (int)DateTime.Now.Subtract(lastMouseDown).TotalMilliseconds < SystemInformation.DoubleClickTime;
+                lastMouseDown = DateTime.Now;
+            }
         }
+
+        #endregion
 
         private void clearPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -683,12 +706,6 @@ namespace JamBit
             db.Insert(currentPlaylist);
             currentPlaylist.SaveToDatabase(db);
             lblPlaylistName.Text = currentPlaylist.Name;
-        }
-
-        private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-                playlistOptions.Show(sender as Control, e.Location);
         }
 
         #endregion
