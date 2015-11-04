@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JamBit
 {
-    class Playlist
+    public class Playlist
     {
         [PrimaryKey, AutoIncrement]
         public int ID { get; set; }

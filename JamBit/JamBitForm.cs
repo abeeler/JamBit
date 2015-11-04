@@ -27,6 +27,7 @@ namespace JamBit
         private BackgroundWorker playlistPopulating;
         private ContextMenuStrip libraryOptions;
         private ContextMenuStrip playlistOptions;
+        private ToolStripMenuItem selectedPlayMode;
 
         private ConcurrentQueue<string> foldersToScan;
 
@@ -40,7 +41,7 @@ namespace JamBit
 
         #endregion
 
-        enum RepeatMode { Loop, Repeat, Shuffle, None }
+        public enum RepeatMode { Loop, Repeat, Shuffle, None }
 
         public JamBitForm()
         {
@@ -164,8 +165,7 @@ namespace JamBit
             }
 
             // Load last play mode used
-            playMode = (RepeatMode)Properties.Settings.Default.LastPlayMode;
-            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
+            SetPlayMode((RepeatMode)Properties.Settings.Default.LastPlayMode);
 
             // Initialize timer to update visual representations of song position
             checkTime = new Timer();
@@ -220,7 +220,7 @@ namespace JamBit
         /// Called when a song playing the music player reaches the end. 
         /// Determines which song plays next based on the current RepeatMode
         /// </summary>
-        public void SongEnded(bool previous = false)
+        public void ChangeSong(bool previous = false)
         {
             if (shuffledSongs.Count >= currentPlaylist.Count)
                 shuffledSongs.Clear();
@@ -377,6 +377,108 @@ namespace JamBit
             Properties.Settings.Default.Save();
         }
 
+        public void OpenFiles()
+        {
+            openFileDialog.ShowDialog();
+        }
+
+        public void OpenPreferencesForm()
+        {
+            new OptionsForm(this).Show();
+        }
+
+        public void CloseForm()
+        {
+            Close();
+        }
+
+        public void PlaySong()
+        {
+            if (playlistIndex == -1 && currentPlaylist.Count > 0)
+                ChangeSong();
+            MusicPlayer.PlaySong();
+        }
+
+        public void PauseSong()
+        {
+            MusicPlayer.PauseSong();
+        }
+
+        public void SetPlayMode(RepeatMode setTo)
+        {
+            playMode = setTo;
+
+            Properties.Settings.Default.LastPlayMode = (int)playMode;
+            Properties.Settings.Default.Save();
+
+            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
+
+            if (selectedPlayMode != null)
+                selectedPlayMode.Checked = false;
+
+            switch (setTo)
+            {
+                case RepeatMode.Loop:
+                    selectedPlayMode = mnuPlayModeLoop;
+                    break;
+                case RepeatMode.Repeat:
+                    selectedPlayMode = mnuPlayModeRepeat;
+                    break;
+                case RepeatMode.Shuffle:
+                    selectedPlayMode = mnuPlayModeShuffle;
+                    break;
+                case RepeatMode.None:
+                    selectedPlayMode = mnuPlayModeNone;
+                    break;
+            }
+            selectedPlayMode.Checked = true;            
+        }
+
+        public void CreatePlaylist()
+        {
+            Playlist newPlaylist = new Playlist();
+            newPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist");
+            CreatePlaylist(newPlaylist);
+        }
+
+        public void CreatePlaylist(Playlist newPlaylist)
+        {
+            db.Insert(newPlaylist);
+            LibraryNode playlistNode = new LibraryNode(LibraryNode.LibraryNodeType.Playlist);
+            playlistNode.Text = newPlaylist.Name;
+            playlistNode.DatabaseKey = newPlaylist.ID;
+            treeLibrary.Nodes[2].Nodes.Add(playlistNode);
+        }
+
+        public void SavePlaylist()
+        {
+            db.Update(currentPlaylist);
+            currentPlaylist.SaveToDatabase(db);
+        }
+
+        public void SaveNewPlaylist()
+        {
+            currentPlaylist.ID = 0;
+            currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist");
+            CreatePlaylist(currentPlaylist);
+            currentPlaylist.SaveToDatabase(db);
+            lblPlaylistName.Text = currentPlaylist.Name;
+            Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
+            Properties.Settings.Default.Save();
+        }
+
+        public void ClearPlaylist()
+        {
+            MusicPlayer.CloseSong();
+            currentPlaylist = new Playlist();
+            shuffledSongs.Clear();
+            lblPlaylistName.Text = "";
+            lstPlaylist.Items.Clear();
+            playlistIndex = -1;
+            Properties.Settings.Default.LastPlaylistIndex = 0;
+            Properties.Settings.Default.Save();
+        }
+
         #endregion
 
         #region Control Event Methods
@@ -386,33 +488,30 @@ namespace JamBit
         private void btnPlay_Click(object sender, EventArgs e)
         {
             // Play the current song
-            if (playlistIndex == -1 && currentPlaylist.Count > 0)
-                SongEnded();
-            MusicPlayer.PlaySong();
+            PlaySong();
         }
 
         private void btnPause_Click(object sender, EventArgs e)
         {
             // Pause the current song
-            MusicPlayer.PauseSong();
+            PauseSong();
         }
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            // Show the dialog for opening new files
-            openFileDialog.ShowDialog();
+            OpenFiles();
         }
 
         private void btnNext_Click(object sender, EventArgs e)
         {
             // Prematurely end the song
-            SongEnded();
+            ChangeSong();
         }
 
         private void btnPrevious_Click(object sender, EventArgs e)
         {
             // Prematurely end the song with the flag for previous
-            SongEnded(true);
+            ChangeSong(true);
         }
 
         private void btnPlayMode_Click(object sender, EventArgs e)
@@ -425,11 +524,7 @@ namespace JamBit
             else
                 playMode++;
 
-            // Update button text
-            btnPlayMode.Text = Enum.GetName(playMode.GetType(), playMode);
-
-            Properties.Settings.Default.LastPlayMode = (int)playMode;
-            Properties.Settings.Default.Save();
+            SetPlayMode(playMode);
         }
 
         private void prgSongTime_SelectedValue(object sender, EventArgs e)
@@ -573,50 +668,35 @@ namespace JamBit
 
         #region Menu Event Methods
 
-        private void mnuFileOpen_Click(object sender, EventArgs e)
-        {
-            // Opens the dialog for opening new song files
-            btnOpen_Click(sender, e);
-        }
+        private void mnuFileOpen_Click(object sender, EventArgs e) { OpenFiles(); }
 
-        private void mnuPrefLibFolders_Click(object sender, EventArgs e)
-        {
-            // Show the options form
-            new OptionsForm(this).Show();
-        }
+        private void mnuFilePreferences_Click(object sender, EventArgs e) { OpenPreferencesForm(); }        
 
-        private void clearPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            MusicPlayer.CloseSong();
-            currentPlaylist = new Playlist();
-            shuffledSongs.Clear();
-            lblPlaylistName.Text = "";
-            lstPlaylist.Items.Clear();
-            playlistIndex = -1;
-            Properties.Settings.Default.LastPlaylistIndex = 0;
-            Properties.Settings.Default.Save();
-        }
+        private void mnuFileClose_Click(object sender, EventArgs e) { CloseForm(); }
 
-        private void savePlaylistToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (currentPlaylist.ID == 0)
-            {
-                savePlaylistAsToolStripMenuItem_Click(sender, e);
-                return;
-            }
+        private void mnuPlaybackPlay_Click(object sender, EventArgs e) { PlaySong(); }
 
-            db.Update(currentPlaylist);
-            currentPlaylist.SaveToDatabase(db);
-        }
+        private void mnuPlaybackPause_Click(object sender, EventArgs e) { PauseSong(); }
 
-        private void savePlaylistAsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            currentPlaylist.ID = 0;
-            currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter a name for this playlist", "Playlist Name");
-            db.Insert(currentPlaylist);
-            currentPlaylist.SaveToDatabase(db);
-            lblPlaylistName.Text = currentPlaylist.Name;
-        }
+        private void mnuPlayModeLoop_Click(object sender, EventArgs e) { SetPlayMode(RepeatMode.Loop); }
+
+        private void mnuPlayModeRepeat_Click(object sender, EventArgs e) { SetPlayMode(RepeatMode.Repeat); }
+
+        private void mnuPlayModeShuffle_Click(object sender, EventArgs e) { SetPlayMode(RepeatMode.Shuffle); }
+
+        private void mnuPlayModeNone_Click(object sender, EventArgs e) { SetPlayMode(RepeatMode.None); }
+
+        private void mnuPlaylistNext_Click(object sender, EventArgs e) { ChangeSong(); }
+
+        private void mnuPlaylistPrevious_Click(object sender, EventArgs e) { ChangeSong(true); }
+
+        private void mnuPlaylistCreate_Click(object sender, EventArgs e) { CreatePlaylist(); }
+
+        private void mnuPlaylistSave_Click(object sender, EventArgs e) { SavePlaylist(); }
+
+        private void mnuPlaylistSaveAs_Click(object sender, EventArgs e) { SaveNewPlaylist(); }
+
+        private void mnuPlaylistClear_Click(object sender, EventArgs e) { ClearPlaylist(); }
 
         #endregion
 
@@ -680,7 +760,7 @@ namespace JamBit
                         AddSongToPlaylist(s);
                     break;
                 case LibraryNode.LibraryNodeType.Playlist:
-                    clearPlaylistToolStripMenuItem_Click(this, new EventArgs());
+                    ClearPlaylist();
                     try
                     {
                         currentPlaylist = db.Get<Playlist>(node.DatabaseKey);
@@ -733,7 +813,7 @@ namespace JamBit
             }
         }
 
-        #endregion        
+        #endregion
 
         #endregion
     }
