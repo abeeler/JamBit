@@ -1,6 +1,7 @@
 ﻿using SQLite;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,12 +31,21 @@ namespace JamBit
         /// <param name="db">The database to save to</param>
         public void SaveToDatabase(SQLiteConnection db)
         {
+            BackgroundWorker bw = new BackgroundWorker();
+            bw.DoWork += SaveToPlaylistBackgroundWork;
+            bw.RunWorkerAsync(db);                
+        }
+
+        private void SaveToPlaylistBackgroundWork(object sender, DoWorkEventArgs e)
+        {
+            SQLiteConnection db = e.Argument as SQLiteConnection;
             List<int> songsSaved = new List<int>();
             try
             {
                 foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where(pi => pi.PlaylistID == ID))
                     songsSaved.Add(pi.SongID);
-            } catch (Exception) { }
+            }
+            catch (Exception) { }
 
             foreach (int id in _songs.Except(songsSaved))
                 db.Insert(new PlaylistItem(ID, id));
@@ -45,7 +55,6 @@ namespace JamBit
                 PlaylistItem toDelete = db.Get<PlaylistItem>(pi => pi.PlaylistID == ID && pi.SongID == id);
                 db.Delete(toDelete);
             }
-                
         }
     }
 }
