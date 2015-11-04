@@ -99,7 +99,7 @@ namespace JamBit
                     parentForm.StartTimeCheck();
                     break;
                 case WMPPlayState.wmppsMediaEnded:
-                    parentForm.SongEnded();
+                    parentForm.ChangeSong();
                     break;
             }
         }
