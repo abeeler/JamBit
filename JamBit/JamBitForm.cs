@@ -7,6 +7,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,6 +39,38 @@ namespace JamBit
         private bool preventExpand = false;
         private DateTime lastMouseDown;
         private List<int> shuffledSongs = new List<int>();
+
+        #endregion
+
+        #region Execution State Fields and Methods
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern EXECUTION_STATE SetThreadExecutionState(EXECUTION_STATE esFlags);
+
+        [FlagsAttribute]
+        public enum EXECUTION_STATE : uint
+        {
+            ES_AWAYMODE_REQUIRED = 0x00000040,
+            ES_CONTINUOUS = 0x80000000,
+            ES_DISPLAY_REQUIRED = 0x00000002,
+            ES_SYSTEM_REQUIRED = 0x00000001
+            // Legacy flag, should not be used.
+            // ES_USER_PRESENT = 0x00000004
+        }
+
+        void RestoreExecutionState()
+        {
+            SetThreadExecutionState(EXECUTION_STATE.ES_CONTINUOUS);
+        }
+
+        void KeepSystemAwake()
+        {
+            SetThreadExecutionState(
+                EXECUTION_STATE.ES_SYSTEM_REQUIRED | 
+                EXECUTION_STATE.ES_DISPLAY_REQUIRED |
+                EXECUTION_STATE.ES_AWAYMODE_REQUIRED |
+                EXECUTION_STATE.ES_CONTINUOUS);
+        }
 
         #endregion
 
@@ -397,11 +430,13 @@ namespace JamBit
             if (playlistIndex == -1 && currentPlaylist.Count > 0)
                 ChangeSong();
             MusicPlayer.PlaySong();
+            KeepSystemAwake();
         }
 
         public void PauseSong()
         {
             MusicPlayer.PauseSong();
+            RestoreExecutionState();
         }
 
         public void SetPlayMode(RepeatMode setTo)
