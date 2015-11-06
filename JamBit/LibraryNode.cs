@@ -7,16 +7,18 @@ using System.Windows.Forms;
 
 namespace JamBit
 {
-    class LibraryNode : TreeNode
+    public class LibraryNode : TreeNode
     {
-        public enum LibraryNodeType { None, Library, RecentlyPlayed, Playlists, Playlist, Artist, Album, Song }
+        public enum LibraryNodeType { None, Playable, Playlist, Playlists }
 
         public LibraryNodeType LibraryType { get; private set; }
         public object DatabaseKey { get; set; }
 
-        public LibraryNode(LibraryNodeType type)
+        public LibraryNode(LibraryNodeType type, string text, object key = null)
         {
             LibraryType = type;
+            this.Text = text;
+            DatabaseKey = key;
         }
     }
 }
