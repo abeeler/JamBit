@@ -25,10 +25,13 @@ namespace JamBit
         private Timer checkTime;
         private OpenFileDialog openFileDialog;
         private BackgroundWorker libraryScanner;
+        private BackgroundWorker playlistDeleter;
         private ContextMenuStrip playableOptions;
-        private ContextMenuStrip playlistsOptions;
+        private ContextMenuStrip currentPlaylistOptions;
         private ContextMenuStrip playlistOptions;
+        private ContextMenuStrip playlistsOptions;
         private ToolStripMenuItem selectedPlayMode;
+        private LibraryNode playlistRightClicked = null;
 
         private ConcurrentQueue<string> foldersToScan;
 
@@ -111,10 +114,21 @@ namespace JamBit
             playableOptions.Items.Add("Add selection to current playlist");
             playableOptions.ItemClicked += libraryOptions_ItemClick;
 
+            // Initialize the current playlist options context menu
+            currentPlaylistOptions = new ContextMenuStrip();
+            currentPlaylistOptions.Items.Add("Remove selection from current playlist");
+            currentPlaylistOptions.ItemClicked += currentPlaylistOptions_ItemClick;
+
             // Initialize the playlist options context menu
+            playlistOptions = new ContextMenuStrip();
+            playlistOptions.Items.Add("Load playlist");
+            playlistOptions.Items.Add("Delete playlist");
+            playlistOptions.ItemClicked += playlistOptions_ItemClick;
+
+            // Initialize the playlist parent node options context menu
             playlistsOptions = new ContextMenuStrip();
-            playlistsOptions.Items.Add("Remove selection from current playlist");
-            playlistsOptions.ItemClicked += playlistOptions_ItemClick;
+            playlistsOptions.Items.Add("Create playlist");
+            playlistsOptions.ItemClicked += playlistsOptions_ItemClick;
 
             // Initialize the background worker for scanning in files from library folders
             libraryScanner = new BackgroundWorker();
@@ -123,6 +137,10 @@ namespace JamBit
             libraryScanner.DoWork += libraryScanner_DoWork;
             libraryScanner.ProgressChanged += libraryScanner_ProgressChanged;
             libraryScanner.RunWorkerCompleted += libraryScanner_RunWorkerCompleted;
+
+            // Initialize the background worker for deleting playlists from the database
+            playlistDeleter = new BackgroundWorker();
+            playlistDeleter.DoWork += playlistDeleter_DoWork;
 
             // Load library into tree view
             PopulateLibraryTree();
@@ -186,7 +204,7 @@ namespace JamBit
             }
             catch (SQLiteException) { }
 
-            LibraryNode playlistsNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, "Playable");
+            LibraryNode playlistsNode = new LibraryNode(LibraryNode.LibraryNodeType.Playlists, "Playlists");
             treeLibrary.Nodes.Add(playlistsNode);
 
             try
@@ -476,8 +494,12 @@ namespace JamBit
         public void CreatePlaylist()
         {
             Playlist newPlaylist = new Playlist();
-            newPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist");
+            string name = null;
+            if (!MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist", out name))
+                return;
+            newPlaylist.Name = name;
             CreatePlaylist(newPlaylist);
+
         }
 
         public void CreatePlaylist(Playlist newPlaylist)
@@ -494,8 +516,11 @@ namespace JamBit
 
         public void SaveNewPlaylist()
         {
+            string name = null;
+            if (!MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist", out name))
+                return;
             currentPlaylist.ID = 0;
-            currentPlaylist.Name = MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist");
+            currentPlaylist.Name = name;
             CreatePlaylist(currentPlaylist);
             currentPlaylist.SaveToDatabase(db);
             lblPlaylistName.Text = currentPlaylist.Name;
@@ -522,6 +547,37 @@ namespace JamBit
             else
                 foreach (LibraryNode child in playable.Nodes.Cast<LibraryNode>())
                     AddPlayableNodeSongs(child);
+        }
+
+        public void LoadPlaylist(int id)
+        {
+            ClearPlaylist();
+            try
+            {
+                currentPlaylist = db.Get<Playlist>(id);
+                shuffledSongs.Clear();
+                lblPlaylistName.Text = currentPlaylist.Name;
+                Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
+                Properties.Settings.Default.Save();
+                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
+                    AddSongToPlaylist(pi.SongID);
+            }
+            catch (Exception) { }
+        }
+
+        public void DeletePlaylist(int id)
+        {
+            playlistDeleter.RunWorkerAsync(id);
+
+            if (currentPlaylist.ID == id)
+                ClearPlaylist();
+
+            foreach (LibraryNode n in treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>())
+                if ((int)n.DatabaseKey == id)
+                {
+                    n.Remove();
+                    return;
+                }
         }
 
         #endregion
@@ -682,6 +738,18 @@ namespace JamBit
             this.Cursor = Cursors.Default;
         }
 
+        private void playlistDeleter_DoWork(object sender, DoWorkEventArgs e)
+        {
+            int id = (int)e.Argument;
+            db.BeginTransaction();
+            Playlist toDelete = db.Get<Playlist>(id);
+
+            foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where(obj => obj.PlaylistID == id).ToList())
+                db.Delete(pi);
+            db.Delete(db.Get<Playlist>(id));
+            db.Commit();
+        }
+
         #endregion
 
         #region Playlist ListView
@@ -689,7 +757,7 @@ namespace JamBit
         private void lstPlaylist_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
-                playlistsOptions.Show(sender as Control, e.Location);
+                currentPlaylistOptions.Show(sender as Control, e.Location);
         }
 
         private void lstPlaylist_DoubleClick(object sender, EventArgs e)
@@ -745,12 +813,12 @@ namespace JamBit
         {
             if (e.ClickedItem == playableOptions.Items[0])
                 foreach (TreeNode node in treeLibrary.SelectedNodes)
-                    treeLibrary_NodeMouseDoubleClick(this, new TreeNodeMouseClickEventArgs(node, MouseButtons.Left, 1, 0, 0));
+                    AddPlayableNodeSongs(node as LibraryNode);
         }
 
-        private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        private void currentPlaylistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
         {
-            if (e.ClickedItem == playlistsOptions.Items[0])
+            if (e.ClickedItem == currentPlaylistOptions.Items[0])
                 for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
                 {
                     if (playlistIndex == lstPlaylist.SelectedIndices[i])
@@ -761,6 +829,20 @@ namespace JamBit
                 }                    
         }
 
+        private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == playlistOptions.Items[0])
+                LoadPlaylist((int)playlistRightClicked.DatabaseKey);
+            else
+                DeletePlaylist((int)playlistRightClicked.DatabaseKey);
+        }
+
+        private void playlistsOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (e.ClickedItem == playlistsOptions.Items[0])
+                CreatePlaylist();
+        }
+
         #endregion
 
         #region Library TreeView
@@ -768,17 +850,22 @@ namespace JamBit
         private void treeLibrary_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
-                switch ((treeLibrary.GetNodeAt(e.Location) as LibraryNode).LibraryType)
+            {
+                LibraryNode clicked = treeLibrary.GetNodeAt(e.Location) as LibraryNode;
+                switch (clicked.LibraryType)
                 {
                     case LibraryNode.LibraryNodeType.Playlists:
+                        playlistsOptions.Show(sender as Control, e.Location);
                         break;
                     case LibraryNode.LibraryNodeType.Playlist:
+                        playlistRightClicked = clicked;
+                        playlistOptions.Show(sender as Control, e.Location);
                         break;
                     default:
                         playableOptions.Show(sender as Control, e.Location);
                         break;
                 }
-                
+            }                
         }
 
         private void treeLibrary_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -793,18 +880,7 @@ namespace JamBit
                     AddPlayableNodeSongs(node);
                     break;
                 case LibraryNode.LibraryNodeType.Playlist:
-                    ClearPlaylist();
-                    try
-                    {
-                        currentPlaylist = db.Get<Playlist>(node.DatabaseKey);
-                        shuffledSongs.Clear();
-                        lblPlaylistName.Text = currentPlaylist.Name;
-                        Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
-                        Properties.Settings.Default.Save();
-                        foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
-                            AddSongToPlaylist(pi.SongID);
-                    }
-                    catch (Exception) { }
+                    LoadPlaylist((int)node.DatabaseKey);
                     break;
             }
         }

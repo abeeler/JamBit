@@ -9,7 +9,7 @@ namespace MusicPlayerControlsLibrary
 {
     public static class Prompt
     {
-        public static string ShowDialog(string text, string caption)
+        public static bool ShowDialog(string text, string caption, out string result)
         {
             Form prompt = new Form();
             prompt.Width = 500;
@@ -26,7 +26,9 @@ namespace MusicPlayerControlsLibrary
             prompt.Controls.Add(textLabel);
             prompt.AcceptButton = confirmation;
 
-            return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+            result = prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+
+            return result.Length > 0;
         }
     }
 }
