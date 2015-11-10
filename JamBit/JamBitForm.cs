@@ -188,7 +188,7 @@ namespace JamBit
                 if (albumNode == null || albumNode.Text != s.Album)
                     albumNode = GetOrMakeNode(artistNode, s.Album, tn => tn.Text.ToLower() == s.Album.ToLower());
 
-                albumNode.Nodes.Add(new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Title, s.ID));
+                albumNode.Nodes.Insert((int)s.Data.Tag.Track, new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Title, s.ID));
             }
 
             LibraryNode recentNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, "Recently Played");
@@ -700,22 +700,10 @@ namespace JamBit
                             {
                                 db.Insert(s);
 
-                                LibraryNode artistNode = treeLibrary.Nodes[0].Nodes.Cast<TreeNode>().Where(tn => tn.Text.ToLower() == s.Artist.ToLower()).ToList().FirstOrDefault() as LibraryNode;
-                                if (artistNode == null)
-                                {
-                                    artistNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Artist);
-                                    libraryScanner.ReportProgress(0, new TreeNode[] { treeLibrary.Nodes[0], artistNode });
-                                }
+                                LibraryNode artistNode = GetOrMakeNode(treeLibrary.Nodes[0], s.Artist, tn => tn.Text.ToLower() == s.Artist.ToLower());
+                                LibraryNode albumNode = GetOrMakeNode(artistNode, s.Album, tn => tn.Text.ToLower() == s.Album.ToLower());
 
-                                LibraryNode albumNode = artistNode.Nodes.Cast<TreeNode>().Where(tn => tn.Text.ToLower() == s.Album.ToLower()).ToList().FirstOrDefault() as LibraryNode;
-                                if (albumNode == null)
-                                {
-                                    albumNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Album);
-                                    libraryScanner.ReportProgress(0, new TreeNode[] { artistNode, albumNode });
-                                }
-
-                                LibraryNode titleNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Title, s.ID);
-                                libraryScanner.ReportProgress(0, new TreeNode[] { albumNode, titleNode });
+                                libraryScanner.ReportProgress(0, new object[] { albumNode, s });
                             }
                         }
 
@@ -729,8 +717,8 @@ namespace JamBit
 
         private void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            TreeNode[] nodes = e.UserState as TreeNode[];
-            nodes[0].Nodes.Add(nodes[1]);
+            Song s = ((object[])e.UserState)[1] as Song;
+            (((object[])e.UserState)[0] as TreeNode).Nodes.Insert((int)s.Data.Tag.Track, new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Title, s.ID);
         }
 
         private void libraryScanner_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
