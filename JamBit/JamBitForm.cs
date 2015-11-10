@@ -33,6 +33,7 @@ namespace JamBit
         private ToolStripMenuItem selectedPlayMode;
         private LibraryNode playlistRightClicked = null;
 
+        private ConcurrentQueue<int> playlistsToDelete;
         private ConcurrentQueue<string> foldersToScan;
 
         private RepeatMode playMode;
@@ -96,6 +97,9 @@ namespace JamBit
 
             // Create concurrent queue for folder scanning
             foldersToScan = new ConcurrentQueue<string>();
+
+            // Create concurrent queue for playlist deletion
+            playlistsToDelete = new ConcurrentQueue<int>();
 
             // Initialize music player
             MusicPlayer.parentForm = this;
@@ -567,17 +571,15 @@ namespace JamBit
 
         public void DeletePlaylist(int id)
         {
-            playlistDeleter.RunWorkerAsync(id);
+            playlistsToDelete.Enqueue(id);
+
+            if (!playlistDeleter.IsBusy)
+                playlistDeleter.RunWorkerAsync();
 
             if (currentPlaylist.ID == id)
                 ClearPlaylist();
 
-            foreach (LibraryNode n in treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>())
-                if ((int)n.DatabaseKey == id)
-                {
-                    n.Remove();
-                    return;
-                }
+            treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>().First<LibraryNode>(ln => (int)ln.DatabaseKey == id).Remove();
         }
 
         #endregion
@@ -718,7 +720,7 @@ namespace JamBit
         private void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             Song s = ((object[])e.UserState)[1] as Song;
-            (((object[])e.UserState)[0] as TreeNode).Nodes.Insert((int)s.Data.Tag.Track, new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Title, s.ID);
+            (((object[])e.UserState)[0] as TreeNode).Nodes.Insert((int)s.Data.Tag.Track, new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Title, s.ID));
         }
 
         private void libraryScanner_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -728,14 +730,18 @@ namespace JamBit
 
         private void playlistDeleter_DoWork(object sender, DoWorkEventArgs e)
         {
-            int id = (int)e.Argument;
-            db.BeginTransaction();
-            Playlist toDelete = db.Get<Playlist>(id);
+            int id;
+            while (playlistsToDelete.Count > 0)
+            {
+                if (!playlistsToDelete.TryDequeue(out id)) continue;
+                db.BeginTransaction();
+                Playlist toDelete = db.Get<Playlist>(id);
 
-            foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where(obj => obj.PlaylistID == id).ToList())
-                db.Delete(pi);
-            db.Delete(db.Get<Playlist>(id));
-            db.Commit();
+                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where(obj => obj.PlaylistID == id).ToList())
+                    db.Delete(pi);
+                db.Delete(db.Get<Playlist>(id));
+                db.Commit();
+            }
         }
 
         #endregion
