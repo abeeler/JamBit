@@ -20,5 +20,12 @@ namespace JamBit
             this.Text = text;
             DatabaseKey = key;
         }
+
+        public LibraryNode(Song s)
+        {
+            this.Text = s.Title;
+            this.DatabaseKey = s.ID;
+            LibraryType = LibraryNodeType.Playable;
+        }
     }
 }

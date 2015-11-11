@@ -27,6 +27,8 @@ namespace JamBit
                 _fileName = value;
                 if (Data != null)
                     Data.Dispose();
+                if (!File.Exists(value))
+                    return;
                 Data = TagLib.File.Create(_fileName);
                 Title = Data.Tag.Title;
                 Artist = Data.Tag.FirstPerformer;
