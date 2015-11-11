@@ -125,6 +125,7 @@
             // lstPlaylist
             // 
             this.lstPlaylist.Activation = System.Windows.Forms.ItemActivation.TwoClick;
+            this.lstPlaylist.AllowDrop = true;
             this.lstPlaylist.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.clmTitle,
             this.clmArtist,
@@ -139,6 +140,10 @@
             this.lstPlaylist.TabIndex = 11;
             this.lstPlaylist.UseCompatibleStateImageBehavior = false;
             this.lstPlaylist.View = System.Windows.Forms.View.Details;
+            this.lstPlaylist.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.lstPlaylist_ItemDrag);
+            this.lstPlaylist.DragDrop += new System.Windows.Forms.DragEventHandler(this.lstPlaylist_DragDrop);
+            this.lstPlaylist.DragEnter += new System.Windows.Forms.DragEventHandler(this.lstPlaylist_DragEnter);
+            this.lstPlaylist.DragOver += new System.Windows.Forms.DragEventHandler(this.lstPlaylist_DragOver);
             this.lstPlaylist.DoubleClick += new System.EventHandler(this.lstPlaylist_DoubleClick);
             this.lstPlaylist.MouseClick += new System.Windows.Forms.MouseEventHandler(this.lstPlaylist_MouseClick);
             // 
@@ -207,21 +212,21 @@
             // mnuFileOpen
             // 
             this.mnuFileOpen.Name = "mnuFileOpen";
-            this.mnuFileOpen.Size = new System.Drawing.Size(152, 22);
+            this.mnuFileOpen.Size = new System.Drawing.Size(137, 22);
             this.mnuFileOpen.Text = "Open File(s)";
             this.mnuFileOpen.Click += new System.EventHandler(this.mnuFileOpen_Click);
             // 
             // mnuFilePreferences
             // 
             this.mnuFilePreferences.Name = "mnuFilePreferences";
-            this.mnuFilePreferences.Size = new System.Drawing.Size(152, 22);
+            this.mnuFilePreferences.Size = new System.Drawing.Size(137, 22);
             this.mnuFilePreferences.Text = "Preferences";
             this.mnuFilePreferences.Click += new System.EventHandler(this.mnuFilePreferences_Click);
             // 
             // mnuFileClose
             // 
             this.mnuFileClose.Name = "mnuFileClose";
-            this.mnuFileClose.Size = new System.Drawing.Size(152, 22);
+            this.mnuFileClose.Size = new System.Drawing.Size(137, 22);
             this.mnuFileClose.Text = "Close";
             this.mnuFileClose.Click += new System.EventHandler(this.mnuFileClose_Click);
             // 
@@ -238,14 +243,14 @@
             // mnuPlaybackPlay
             // 
             this.mnuPlaybackPlay.Name = "mnuPlaybackPlay";
-            this.mnuPlaybackPlay.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlaybackPlay.Size = new System.Drawing.Size(130, 22);
             this.mnuPlaybackPlay.Text = "Play";
             this.mnuPlaybackPlay.Click += new System.EventHandler(this.mnuPlaybackPlay_Click);
             // 
             // mnuPlaybackPause
             // 
             this.mnuPlaybackPause.Name = "mnuPlaybackPause";
-            this.mnuPlaybackPause.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlaybackPause.Size = new System.Drawing.Size(130, 22);
             this.mnuPlaybackPause.Text = "Pause";
             this.mnuPlaybackPause.Click += new System.EventHandler(this.mnuPlaybackPause_Click);
             // 
@@ -257,34 +262,34 @@
             this.mnuPlayModeShuffle,
             this.mnuPlayModeNone});
             this.mnuPlaybackPlayMode.Name = "mnuPlaybackPlayMode";
-            this.mnuPlaybackPlayMode.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlaybackPlayMode.Size = new System.Drawing.Size(130, 22);
             this.mnuPlaybackPlayMode.Text = "Play Mode";
             // 
             // mnuPlayModeLoop
             // 
             this.mnuPlayModeLoop.Name = "mnuPlayModeLoop";
-            this.mnuPlayModeLoop.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlayModeLoop.Size = new System.Drawing.Size(111, 22);
             this.mnuPlayModeLoop.Text = "Loop";
             this.mnuPlayModeLoop.Click += new System.EventHandler(this.mnuPlayModeLoop_Click);
             // 
             // mnuPlayModeRepeat
             // 
             this.mnuPlayModeRepeat.Name = "mnuPlayModeRepeat";
-            this.mnuPlayModeRepeat.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlayModeRepeat.Size = new System.Drawing.Size(111, 22);
             this.mnuPlayModeRepeat.Text = "Repeat";
             this.mnuPlayModeRepeat.Click += new System.EventHandler(this.mnuPlayModeRepeat_Click);
             // 
             // mnuPlayModeShuffle
             // 
             this.mnuPlayModeShuffle.Name = "mnuPlayModeShuffle";
-            this.mnuPlayModeShuffle.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlayModeShuffle.Size = new System.Drawing.Size(111, 22);
             this.mnuPlayModeShuffle.Text = "Shuffle";
             this.mnuPlayModeShuffle.Click += new System.EventHandler(this.mnuPlayModeShuffle_Click);
             // 
             // mnuPlayModeNone
             // 
             this.mnuPlayModeNone.Name = "mnuPlayModeNone";
-            this.mnuPlayModeNone.Size = new System.Drawing.Size(152, 22);
+            this.mnuPlayModeNone.Size = new System.Drawing.Size(111, 22);
             this.mnuPlayModeNone.Text = "None";
             this.mnuPlayModeNone.Click += new System.EventHandler(this.mnuPlayModeNone_Click);
             // 

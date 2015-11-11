@@ -22,7 +22,8 @@ namespace JamBit
 
         public SQLiteConnection db;
 
-        private Timer checkTime;
+        private Timer timeCheckTimer;
+        private Timer playlistScrollTimer;
         private OpenFileDialog openFileDialog;
         private BackgroundWorker libraryScanner;
         private BackgroundWorker playlistDeleter;
@@ -41,6 +42,8 @@ namespace JamBit
         private Playlist currentPlaylist = new Playlist();
         private int playlistIndex = -1;
         private bool preventExpand = false;
+        private int playlistScrollDirection = 1;
+        private int playlistItemsViewable;
         private DateTime lastMouseDown;
         private List<int> shuffledSongs = new List<int>();
 
@@ -169,9 +172,18 @@ namespace JamBit
             SetPlayMode((RepeatMode)Properties.Settings.Default.LastPlayMode);
 
             // Initialize timer to update visual representations of song position
-            checkTime = new Timer();
-            checkTime.Interval = 1000;
-            checkTime.Tick += new System.EventHandler(checkTime_Tick);            
+            timeCheckTimer = new Timer();
+            timeCheckTimer.Interval = 1000;
+            timeCheckTimer.Tick += new System.EventHandler(checkTime_Tick);
+
+            // Initialize timer to scroll the playlist while dragging
+            playlistScrollTimer = new Timer();
+            playlistScrollTimer.Interval = 150;
+            playlistScrollTimer.Tick += playlistScrollTimer_Tick;
+
+            // Initialize value for number of items visible in the ListView
+            UpdatePlaylistViewValues();
+
         }
 
         #region Library Tree View Methods
@@ -268,12 +280,12 @@ namespace JamBit
         /// <summary>
         /// Pause the timer that updates the current song position
         /// </summary>
-        public void PauseTimeCheck() { checkTime.Stop(); }
+        public void PauseTimeCheck() { timeCheckTimer.Stop(); }
 
         /// <summary>
         /// Start the timer that updates the current song position
         /// </summary>
-        public void StartTimeCheck() { checkTime.Start(); }
+        public void StartTimeCheck() { timeCheckTimer.Start(); }
 
         /// <summary>
         /// Called when a song playing the music player reaches the end. 
@@ -582,6 +594,14 @@ namespace JamBit
             treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>().First<LibraryNode>(ln => (int)ln.DatabaseKey == id).Remove();
         }
 
+        public void UpdatePlaylistViewValues()
+        {
+            playlistItemsViewable = 0;
+            int currentIndex = lstPlaylist.TopItem.Index;
+            while (currentIndex < lstPlaylist.Items.Count && lstPlaylist.Items[currentIndex++].Bounds.IntersectsWith(lstPlaylist.ClientRectangle))
+                playlistItemsViewable++;
+        }
+
         #endregion
 
         #region Control Event Methods
@@ -664,6 +684,16 @@ namespace JamBit
 
             // Update the progress bar to the current position
             prgSongTime.SetValue((int)((double)seconds / MusicPlayer.curSong.Length * prgSongTime.Maximum));
+        }
+
+        private void playlistScrollTimer_Tick(object sender, EventArgs e)
+        {
+            if (playlistScrollDirection == 1 && lstPlaylist.TopItem.Index + playlistItemsViewable >= lstPlaylist.Items.Count)
+                return;
+            if (playlistScrollDirection == -1 && lstPlaylist.TopItem.Index == 0)
+                return;
+
+            lstPlaylist.TopItem = lstPlaylist.Items[lstPlaylist.TopItem.Index + playlistScrollDirection];
         }
 
         private void openFileDialog_OnFileOk(object sender, CancelEventArgs e)
@@ -763,6 +793,92 @@ namespace JamBit
                 playlistIndex = lstPlaylist.SelectedIndices[0];
                 OpenSong();
             }
+        }
+
+        private void lstPlaylist_DragDrop(object sender, DragEventArgs e)
+        {
+            playlistScrollTimer.Stop();
+            if (lstPlaylist.SelectedItems.Count == 0) return;
+
+            //Obtain the item that is located at the specified location of the mouse pointer.
+            Point listPoint = lstPlaylist.PointToClient(new Point(e.X, e.Y));
+            ListViewItem dragToItem = lstPlaylist.GetItemAt(listPoint.X, listPoint.Y);
+            if (dragToItem == null) return;
+
+            List<int> newIndexes = new List<int>();
+            for (int i = 0; i < currentPlaylist.Songs.Count; i++)
+                newIndexes.Add(i);
+
+            bool before = dragToItem.Index < lstPlaylist.SelectedItems[0].Index;
+
+            int placementIndex = dragToItem.Index;
+            foreach (ListViewItem item in lstPlaylist.SelectedItems)
+            {
+                if (item.Index == dragToItem.Index) continue;
+                newIndexes.Remove(item.Index);
+                newIndexes.Insert(placementIndex, item.Index);
+                ListViewItem toInsert = item.Clone() as ListViewItem;
+                toInsert.Selected = true;
+                lstPlaylist.Items.Insert(placementIndex, toInsert);
+                lstPlaylist.Items.Remove(item);
+
+                if (before) placementIndex++;
+            }
+
+            List<int> newIDs = new List<int>();
+            List<PlaylistItem> toUpdate = new List<PlaylistItem>();
+            for (int i = 0; i < newIndexes.Count; i++)
+            {
+                newIDs.Add(db.Table<PlaylistItem>().First<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID && pi.SongID == currentPlaylist.Songs[i]).ID);
+                toUpdate.Add(db.Table<PlaylistItem>().First<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID && pi.SongID == currentPlaylist.Songs[newIndexes[i]]));
+            }
+
+            db.BeginTransaction();
+
+            for (int i = 0; i < newIndexes.Count; i++)
+            {
+                if (newIndexes[i] == i) continue;
+                toUpdate[i].ID = newIDs[i];
+                db.Update(toUpdate[i]);
+            }
+
+            db.Commit();
+
+            currentPlaylist = db.Get<Playlist>(currentPlaylist.ID);
+            foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
+                currentPlaylist.Songs.Add(pi.SongID);
+
+            playlistIndex = newIndexes.IndexOf(playlistIndex);
+        }
+
+        private void lstPlaylist_ItemDrag(object sender, ItemDragEventArgs e)
+        {
+            lstPlaylist.DoDragDrop(lstPlaylist.SelectedItems, DragDropEffects.Move);
+        }
+
+        private void lstPlaylist_DragEnter(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Move;
+        }
+
+        private void lstPlaylist_DragOver(object sender, DragEventArgs e)
+        {
+            Point position = lstPlaylist.PointToClient(new Point(e.X, e.Y));
+
+            if (position.Y <= (lstPlaylist.Font.Height * 2))
+            {
+                // getting close to top, ensure previous item is visible
+                playlistScrollDirection = -1;
+                playlistScrollTimer.Start();
+            }
+            else if (position.Y >= lstPlaylist.ClientSize.Height - lstPlaylist.Font.Height / 2)
+            {
+                // getting close to bottom, ensure next item is visible
+                playlistScrollDirection = 1;
+                playlistScrollTimer.Start();
+            }
+            else
+                playlistScrollTimer.Stop();
         }
 
         #endregion
