@@ -182,37 +182,53 @@ namespace JamBit
             playlistScrollTimer.Tick += playlistScrollTimer_Tick;
 
             // Initialize value for number of items visible in the ListView
-            UpdatePlaylistViewValues();
+            CountPlaylistItemsViewable();
 
         }
 
         #region Library Tree View Methods
 
+        /// <summary>
+        /// Reset the tree view and populate it with the songs in the library, the recently played songs, and the user-created playlists
+        /// </summary>
         private void PopulateLibraryTree()
         {
-            // Initialzize tree view
+            // Clear the tree view initially
+            treeLibrary.Nodes.Clear();
+
+            //
+            // Load the Library node, holding every song in the library
+            //
             LibraryNode libraryNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, "Library");
             treeLibrary.Nodes.Add(libraryNode);
 
+            // Initialize the nodes to be used 
             LibraryNode artistNode = null, albumNode = null;
 
             foreach (Song s in db.Table<Song>())
             {
+                // If this is the first song or the last song doesn't have the same artist, find the artist node in the tree or make one
                 if (artistNode == null || artistNode.Text != s.Artist)
                     artistNode = GetOrMakeNode(libraryNode, s.Artist, tn => tn.Text.ToLower() == s.Artist.ToLower());
 
+                // If this is the first song or the last song doesn't have the same album, find the artist node in the tree or make one
                 if (albumNode == null || albumNode.Text != s.Album)
                     albumNode = GetOrMakeNode(artistNode, s.Album, tn => tn.Text.ToLower() == s.Album.ToLower());
 
+                // If the filename of the song exists, insert the song based on track number
                 if (File.Exists(s.FileName))
                     albumNode.Nodes.Insert((int)s.Data.Tag.Track, new LibraryNode(s));
                 else
                     albumNode.Nodes.Add(new LibraryNode(s));
             }
-
+            
+            //
+            // Load the Recently Played node, holding a list of the last songs played
+            //
             LibraryNode recentNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, "Recently Played");
             treeLibrary.Nodes.Add(recentNode);
 
+            // Add a node to the tree for every song in the recent song list
             try
             {
                 foreach (RecentSong rs in db.Table<RecentSong>())
@@ -223,9 +239,13 @@ namespace JamBit
             }
             catch (SQLiteException) { }
 
+            //
+            // Load the Plyalists node, holding a node for each playlist the user has made
+            //
             LibraryNode playlistsNode = new LibraryNode(LibraryNode.LibraryNodeType.Playlists, "Playlists");
             treeLibrary.Nodes.Add(playlistsNode);
 
+            // Add a node to the tree for each playlist
             try
             {
                 foreach (Playlist p in db.Table<Playlist>())
@@ -234,6 +254,14 @@ namespace JamBit
             catch (Exception) { }
         }
 
+        /// <summary>
+        /// Searches the parent node for the first node that matches the given predicate. 
+        /// If no matches are found, creates a new node with the provided text
+        /// </summary>
+        /// <param name="parentNode">The node to search</param>
+        /// <param name="textToUse">The text to use if a new node needs to made</param>
+        /// <param name="predicate">The predicate to search with</param>
+        /// <returns>The found or created node in the tree</returns>
         public LibraryNode GetOrMakeNode(TreeNode parentNode, string textToUse, Func<TreeNode, bool> predicate)
         {
             LibraryNode node = parentNode.Nodes.Cast<TreeNode>().Where(predicate).FirstOrDefault() as LibraryNode;
@@ -245,11 +273,16 @@ namespace JamBit
             return node;
         }
 
+        /// <summary>
+        /// Attempts to find the node in the tree view that matches the given song
+        /// </summary>
+        /// <param name="s">The song to search for</param>
+        /// <returns>The matching node or null</returns>
         public LibraryNode GetSongNode(Song s)
         {
-            return treeLibrary.Nodes[0].Nodes.Cast<LibraryNode>().First(artist => artist.Text == s.Artist).
-                Nodes.Cast<LibraryNode>().First(album => album.Text == s.Album).
-                Nodes.Cast<LibraryNode>().First(song => song.Text == s.Title);
+            return treeLibrary.Nodes[0].Nodes.Cast<LibraryNode>().FirstOrDefault(artist => artist.Text == s.Artist).
+                Nodes.Cast<LibraryNode>().FirstOrDefault(album => album.Text == s.Album).
+                Nodes.Cast<LibraryNode>().FirstOrDefault(song => song.Text == s.Title);
         }
 
         #endregion
@@ -359,34 +392,49 @@ namespace JamBit
             }                
         }
 
+        /// <summary>
+        /// Adds a song to the playlist by ID
+        /// </summary>
+        /// <param name="id"></param>
         public void AddSongToPlaylist(int id)
         {
             AddSongToPlaylist(db.Get<Song>(id));
-            try {  }
-            catch (System.InvalidOperationException) { }
         }
 
+        /// <summary>
+        /// Adds a song to the current playlist
+        /// </summary>
+        /// <param name="s"></param>
         public void AddSongToPlaylist(Song s)
         {
-            if (!currentPlaylist.Songs.Contains(s.ID))
-            {
-                currentPlaylist.Songs.Add(s.ID);
-                lstPlaylist.Items.Add(new ListViewItem(new string[] {
+            if (currentPlaylist.Songs.Contains(s.ID)) return;
+
+            currentPlaylist.Songs.Add(s.ID);
+            lstPlaylist.Items.Add(new ListViewItem(new string[] {
                     s.Title, s.Artist, s.Album, s.PlayCount.ToString()
-                }));                
-            }
+                }));
+
         }
 
+        /// <summary>
+        /// Open the current song in the playlist in the music player
+        /// </summary>
         private void OpenSong() { OpenSong(db.Get<Song>(currentPlaylist.Songs[playlistIndex])); }
 
+        /// <summary>
+        /// Open the given song in the music player
+        /// </summary>
+        /// <param name="s">The song to open</param>
         private void OpenSong(Song s)
         {
+            // If the song has no attached filename, change the song
             if (s.FileName.Length == 0)
             {
                 ChangeSong();
                 return;
             }
 
+            // If the song's file does not exist, remove that filename from the database and change the song
             if (!File.Exists(s.FileName))
             {
                 s.FileName = "";
@@ -395,17 +443,21 @@ namespace JamBit
                 return;
             }
 
+            // Open the song and update the display
             MusicPlayer.OpenSong(s);
             RefreshPlayer();
             s.PlayCount++;
             db.Update(s);
 
+            // Updates the play count for the song
+            lstPlaylist.Items[playlistIndex].SubItems[3] =
+                new ListViewItem.ListViewSubItem(lstPlaylist.Items[playlistIndex], s.PlayCount.ToString());
+
+            // If the song hasn't been played yet, add it to the shuffled songs
             if (!shuffledSongs.Contains(s.ID))
                 shuffledSongs.Add(s.ID);
 
-            lstPlaylist.Items[playlistIndex].SubItems[3] = 
-                new ListViewItem.ListViewSubItem(lstPlaylist.Items[playlistIndex], s.PlayCount.ToString());
-
+            // Update the recently played song list
             bool foundMatch = false;
             try {
                 db.Table<RecentSong>().Where(recentSong => recentSong.SongID == s.ID).First();
@@ -434,6 +486,10 @@ namespace JamBit
             }
         }
 
+        /// <summary>
+        /// Resets all saved settings and clears all songs from the library. 
+        /// Should only be called before any database is opened or before closing
+        /// </summary>
         public void ResetApplication()
         {
             db.DropTable<Song>();
@@ -441,27 +497,37 @@ namespace JamBit
             db.DropTable<PlaylistItem>();
             db.DropTable<RecentSong>();
 
-            Properties.Settings.Default.LastPlaylistIndex = 0;
-            Properties.Settings.Default.LastPlayMode = 0;
-            Properties.Settings.Default.RecentlyPlayedIndex = 1;
+            Properties.Settings.Default.Reset();
             Properties.Settings.Default.Save();
         }
 
-        public void OpenFiles()
+        /// <summary>
+        /// Shows the dialog for opening music files
+        /// </summary>
+        public void ShowOpenFileDialog()
         {
             openFileDialog.ShowDialog();
         }
 
+        /// <summary>
+        /// Shows the options form
+        /// </summary>
         public void OpenPreferencesForm()
         {
             new OptionsForm(this).Show();
         }
 
+        /// <summary>
+        /// Performs necessary operations and then closes the form
+        /// </summary>
         public void CloseForm()
         {
             Close();
         }
 
+        /// <summary>
+        /// Play the current song. If no song was playing before, load the first
+        /// </summary>
         public void PlaySong()
         {
             if (playlistIndex == -1 && currentPlaylist.Count > 0)
@@ -470,12 +536,19 @@ namespace JamBit
             KeepSystemAwake();
         }
 
+        /// <summary>
+        /// Pause the current song
+        /// </summary>
         public void PauseSong()
         {
             MusicPlayer.PauseSong();
             RestoreExecutionState();
         }
 
+        /// <summary>
+        /// Set the current play mode and update the settings
+        /// </summary>
+        /// <param name="setTo">The play mode to set the player to</param>
         public void SetPlayMode(RepeatMode setTo)
         {
             playMode = setTo;
@@ -506,6 +579,9 @@ namespace JamBit
             selectedPlayMode.Checked = true;            
         }
 
+        /// <summary>
+        /// Create a new playlist, prompting the user for a name
+        /// </summary>
         public void CreatePlaylist()
         {
             Playlist newPlaylist = new Playlist();
@@ -517,19 +593,29 @@ namespace JamBit
 
         }
 
+        /// <summary>
+        /// Save the provided playlist to the database
+        /// </summary>
+        /// <param name="newPlaylist">The playlist to save</param>
         public void CreatePlaylist(Playlist newPlaylist)
         {
             db.Insert(newPlaylist);
             treeLibrary.Nodes[2].Nodes.Add(new LibraryNode(LibraryNode.LibraryNodeType.Playlist, newPlaylist.Name, newPlaylist.ID));
         }
 
+        /// <summary>
+        /// Save the current playlist and its tracks to the database
+        /// </summary>
         public void SavePlaylist()
         {
             db.Update(currentPlaylist);
             currentPlaylist.SaveToDatabase(db);
         }
 
-        public void SaveNewPlaylist()
+        /// <summary>
+        /// Save the current playlist as a new playlist with a new name
+        /// </summary>
+        public void SaveAsNewPlaylist()
         {
             string name = null;
             if (!MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new playlist name: ", "Create a Playlist", out name))
@@ -543,6 +629,9 @@ namespace JamBit
             Properties.Settings.Default.Save();
         }
 
+        /// <summary>
+        /// Clear the current playlist
+        /// </summary>
         public void ClearPlaylist()
         {
             MusicPlayer.CloseSong();
@@ -555,6 +644,10 @@ namespace JamBit
             Properties.Settings.Default.Save();
         }
 
+        /// <summary>
+        /// Recursively add all songs in a playable node to the current playlist
+        /// </summary>
+        /// <param name="playable">The node to add</param>
         public void AddPlayableNodeSongs(LibraryNode playable)
         {
             if (playable.Nodes.Count == 0 && playable.IsVisible)
@@ -564,6 +657,10 @@ namespace JamBit
                     AddPlayableNodeSongs(child);
         }
 
+        /// <summary>
+        /// Load a playlist using the given ID
+        /// </summary>
+        /// <param name="id">The ID of the playlist to load</param>
         public void LoadPlaylist(int id)
         {
             ClearPlaylist();
@@ -580,20 +677,31 @@ namespace JamBit
             catch (Exception) { }
         }
 
+        /// <summary>
+        /// Delete a playlist from the library by ID
+        /// </summary>
+        /// <param name="id">The ID of the playlist to delete</param>
         public void DeletePlaylist(int id)
         {
+            // Add the ID to the list of playlists to delete
             playlistsToDelete.Enqueue(id);
 
+            // If the background worker is free, start it up
             if (!playlistDeleter.IsBusy)
                 playlistDeleter.RunWorkerAsync();
 
+            // If the deleted playlist is the current one, delete it
             if (currentPlaylist.ID == id)
                 ClearPlaylist();
 
+            // Remove the playlist node from the tree
             treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>().First<LibraryNode>(ln => (int)ln.DatabaseKey == id).Remove();
         }
-
-        public void UpdatePlaylistViewValues()
+        
+        /// <summary>
+        /// Determine how many items in the playlist are viewable
+        /// </summary>
+        public void CountPlaylistItemsViewable()
         {
             playlistItemsViewable = 0;
             int currentIndex = lstPlaylist.TopItem.Index;
@@ -601,6 +709,10 @@ namespace JamBit
                 playlistItemsViewable++;
         }
 
+        /// <summary>
+        /// Add a song to the library
+        /// </summary>
+        /// <param name="s">The song to add</param>
         public void AddSongToLibrary(Song s)
         {
             Song inLibrary = db.Find<Song>(dbSong => dbSong.Title == s.Title && dbSong.Artist == s.Artist);
@@ -642,7 +754,7 @@ namespace JamBit
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            OpenFiles();
+            ShowOpenFileDialog();
         }
 
         private void btnNext_Click(object sender, EventArgs e)
@@ -894,7 +1006,7 @@ namespace JamBit
 
         #region Menu Event Methods
 
-        private void mnuFileOpen_Click(object sender, EventArgs e) { OpenFiles(); }
+        private void mnuFileOpen_Click(object sender, EventArgs e) { ShowOpenFileDialog(); }
 
         private void mnuFilePreferences_Click(object sender, EventArgs e) { OpenPreferencesForm(); }        
 
@@ -920,7 +1032,7 @@ namespace JamBit
 
         private void mnuPlaylistSave_Click(object sender, EventArgs e) { SavePlaylist(); }
 
-        private void mnuPlaylistSaveAs_Click(object sender, EventArgs e) { SaveNewPlaylist(); }
+        private void mnuPlaylistSaveAs_Click(object sender, EventArgs e) { SaveAsNewPlaylist(); }
 
         private void mnuPlaylistClear_Click(object sender, EventArgs e) { ClearPlaylist(); }
 
