@@ -90,6 +90,7 @@ namespace JamBit
             // Establish DB connection
             db = new SQLiteConnection(Path.Combine(Application.UserAppDataPath, "jambit.db"));
 
+            // Resets the application settings before anything occurs
             //ResetApplication();
 
             // Create tables if they do not already exist
@@ -459,31 +460,33 @@ namespace JamBit
             if (!shuffledSongs.Contains(s.ID))
                 shuffledSongs.Add(s.ID);
 
+            //
             // Update the recently played song list
-            bool foundMatch = false;
-            try {
-                db.Table<RecentSong>().Where(recentSong => recentSong.SongID == s.ID).First();
-            } catch (Exception) { foundMatch = true; }
+            //
 
-            if (foundMatch)
+            // If song isn't in list already
+            if (db.Find<RecentSong>(rs => rs.SongID == s.ID) == null)
             {
-                try {
-                    foundMatch = db.Table<RecentSong>().Count() < Properties.Settings.Default.RecentlyPlayedMax;
-                } catch (SQLiteException) { foundMatch = true; }
-
-                if (foundMatch)
+                // If more songs can be added to the list, just add them
+                if (db.Table<RecentSong>().Count() < Properties.Settings.Default.RecentlyPlayedMax)
+                {
                     db.Insert(new RecentSong(s.ID));
+                    treeLibrary.Nodes[1].Nodes.Add(new LibraryNode(s));
+                }
+
+                // Otherwise, replace the oldest song in the list with the new one
                 else
                 {
-                    if (Properties.Settings.Default.RecentlyPlayedIndex == Properties.Settings.Default.RecentlyPlayedMax + 1)
-                    {
-                        Properties.Settings.Default.RecentlyPlayedIndex = 1;
-                        Properties.Settings.Default.Save();
-                    }
-                        
+                    treeLibrary.Nodes[1].Nodes.RemoveAt(Properties.Settings.Default.RecentlyPlayedIndex);
+                    treeLibrary.Nodes[1].Nodes.Insert(Properties.Settings.Default.RecentlyPlayedIndex, new LibraryNode(s));
+
                     RecentSong toUpdate = db.Get<RecentSong>(Properties.Settings.Default.RecentlyPlayedIndex++);
                     toUpdate.SongID = s.ID;
                     db.Update(toUpdate);
+
+                    if (Properties.Settings.Default.RecentlyPlayedIndex >= Properties.Settings.Default.RecentlyPlayedMax)
+                        Properties.Settings.Default.RecentlyPlayedIndex = 1;
+                    Properties.Settings.Default.Save();
                 }
             }
         }
@@ -652,7 +655,7 @@ namespace JamBit
         /// <param name="playable">The node to add</param>
         public void AddPlayableNodeSongs(LibraryNode playable)
         {
-            if (playable.Nodes.Count == 0 && playable.IsVisible)
+            if (playable.Nodes.Count == 0)
                 AddSongToPlaylist((int)playable.DatabaseKey);
             else
                 foreach (LibraryNode child in playable.Nodes.Cast<LibraryNode>())
@@ -705,10 +708,14 @@ namespace JamBit
         /// </summary>
         public void CountPlaylistItemsViewable()
         {
-            playlistItemsViewable = 0;
-            int currentIndex = lstPlaylist.TopItem.Index;
-            while (currentIndex < lstPlaylist.Items.Count && lstPlaylist.Items[currentIndex++].Bounds.IntersectsWith(lstPlaylist.ClientRectangle))
-                playlistItemsViewable++;
+            if (lstPlaylist.Items.Count > 0) {
+                playlistItemsViewable = lstPlaylist.ClientRectangle.Height / lstPlaylist.GetItemRect(0).Height;
+                return;
+            }
+
+            lstPlaylist.Items.Add("Test");
+            playlistItemsViewable = lstPlaylist.ClientRectangle.Height / lstPlaylist.GetItemRect(0).Height;
+            lstPlaylist.Items.Clear();
         }
 
         /// <summary>
@@ -874,8 +881,8 @@ namespace JamBit
                     {
                         try
                         {
-                            // Attempt to open the current file
-                            AddSongToLibrary(new Song(file));
+                            s = new Song(file);
+                            libraryScanner.ReportProgress(0, s);
                         }
 
                         // If the filename is too long
@@ -888,8 +895,7 @@ namespace JamBit
 
         private void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            Song s = ((object[])e.UserState)[1] as Song;
-            (((object[])e.UserState)[0] as TreeNode).Nodes.Insert((int)s.Data.Tag.Track, new LibraryNode(s));
+            AddSongToLibrary(e.UserState as Song);
         }
 
         private void libraryScanner_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
