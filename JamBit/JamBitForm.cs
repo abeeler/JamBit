@@ -430,6 +430,7 @@ namespace JamBit
             // If the song has no attached filename, change the song
             if (s.FileName.Length == 0)
             {
+                RemoveSongFromPlaylist(playlistIndex);
                 ChangeSong();
                 return;
             }
@@ -439,6 +440,7 @@ namespace JamBit
             {
                 s.FileName = "";
                 db.Update(s);
+                RemoveSongFromPlaylist(playlistIndex);
                 ChangeSong();
                 return;
             }
@@ -732,6 +734,22 @@ namespace JamBit
                     db.Update(inLibrary);
                 }
             }
+        }
+
+        public void RemoveSongFromPlaylistByID(int id)
+        {
+            int index = currentPlaylist.Songs.IndexOf(id);
+            if (index > -1)
+                RemoveSongFromPlaylist(index);
+        }
+
+        public void RemoveSongFromPlaylist(int index)
+        {
+            if (playlistIndex == index)
+                playlistIndex--;
+            shuffledSongs.Remove(currentPlaylist.Songs[index]);
+            currentPlaylist.Songs.RemoveAt(index);
+            lstPlaylist.Items.RemoveAt(index);
         }
 
         #endregion
@@ -1049,14 +1067,11 @@ namespace JamBit
 
         private void currentPlaylistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
         {
+            // Iterate from the last selection to the first to prevent changes in indices during removal
             if (e.ClickedItem == currentPlaylistOptions.Items[0])
                 for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
                 {
-                    if (playlistIndex == lstPlaylist.SelectedIndices[i])
-                        playlistIndex--;
-                    shuffledSongs.Remove(currentPlaylist.Songs[lstPlaylist.SelectedIndices[i]]);
-                    currentPlaylist.Songs.RemoveAt(lstPlaylist.SelectedIndices[i]);
-                    lstPlaylist.Items.RemoveAt(lstPlaylist.SelectedIndices[i]);
+                    RemoveSongFromPlaylist(lstPlaylist.SelectedIndices[i]);
                 }                    
         }
 
