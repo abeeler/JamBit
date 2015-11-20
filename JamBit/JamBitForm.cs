@@ -46,6 +46,7 @@ namespace JamBit
         private int playlistItemsViewable;
         private DateTime lastMouseDown;
         private List<int> shuffledSongs = new List<int>();
+        private OptionsForm optionsForm = null;
 
         #endregion
 
@@ -519,7 +520,20 @@ namespace JamBit
         /// </summary>
         public void OpenPreferencesForm()
         {
-            new OptionsForm(this).Show();
+            if (optionsForm == null)
+            {
+                optionsForm = new OptionsForm(this);
+                optionsForm.Show();
+            } else {
+                optionsForm.WindowState = FormWindowState.Minimized;
+                optionsForm.Show();
+                optionsForm.WindowState = FormWindowState.Normal;
+            }
+        }
+
+        public void PreferencesFormClosed()
+        {
+            optionsForm = null;
         }
 
         /// <summary>

@@ -61,5 +61,10 @@ namespace JamBit
         }
 
         #endregion
+
+        private void OptionsForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            parent.PreferencesFormClosed();
+        }
     }
 }

@@ -95,6 +95,7 @@
             this.Controls.Add(this.lstLibraryFolders);
             this.Name = "OptionsForm";
             this.Text = "OptionsForm";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OptionsForm_FormClosed);
             this.ResumeLayout(false);
             this.PerformLayout();
 
