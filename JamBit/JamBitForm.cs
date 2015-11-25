@@ -257,6 +257,19 @@ namespace JamBit
         }
 
         /// <summary>
+        /// Searches the parent node for the first node that matches the given predicate
+        /// </summary>
+        /// <param name="parentNode">The node to search</param>
+        /// <param name="predicate">The predicate to search with</param>
+        /// <param name="node">The LibraryNode that will be sent back</param>
+        /// <returns>Whether a node was found or not</returns>
+        public bool GetNode(TreeNode parentNode, Func<TreeNode, bool> predicate, out LibraryNode node)
+        {
+            node = parentNode.Nodes.Cast<TreeNode>().Where(predicate).FirstOrDefault() as LibraryNode;
+            return node != null;
+        }
+
+        /// <summary>
         /// Searches the parent node for the first node that matches the given predicate. 
         /// If no matches are found, creates a new node with the provided text
         /// </summary>
@@ -266,8 +279,8 @@ namespace JamBit
         /// <returns>The found or created node in the tree</returns>
         public LibraryNode GetOrMakeNode(TreeNode parentNode, string textToUse, Func<TreeNode, bool> predicate)
         {
-            LibraryNode node = parentNode.Nodes.Cast<TreeNode>().Where(predicate).FirstOrDefault() as LibraryNode;
-            if (node != null)
+            LibraryNode node;
+            if (GetNode(parentNode, predicate, out node))
                 return node;
 
             node = new LibraryNode(LibraryNode.LibraryNodeType.Playable, textToUse);
@@ -896,7 +909,38 @@ namespace JamBit
                         try
                         {
                             s = new Song(file);
-                            libraryScanner.ReportProgress(0, s);
+                            Song inLibrary = db.Find<Song>(dbSong => dbSong.Title == s.Title && dbSong.Artist == s.Artist);
+
+                            if (inLibrary == null)
+                            {
+                                db.Insert(s);
+
+                                List<TreeNode[]> nodesToAdd = new List<TreeNode[]>();
+
+                                LibraryNode artistNode, albumNode;
+                                if (!GetNode(treeLibrary.Nodes[0], tn => tn.Text.ToLower() == s.Artist.ToLower(), out artistNode)) {
+                                    artistNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Artist);
+                                    nodesToAdd.Add(new TreeNode[] { treeLibrary.Nodes[0], artistNode });
+                                }
+
+                                if (!GetNode(artistNode, tn => tn.Text.ToLower() == s.Album.ToLower(), out albumNode))
+                                {
+                                    albumNode = new LibraryNode(LibraryNode.LibraryNodeType.Playable, s.Album);
+                                    nodesToAdd.Add(new TreeNode[] { artistNode, albumNode });
+                                }
+
+                                nodesToAdd.Add(new TreeNode[] { albumNode, new LibraryNode(s) });
+
+                                libraryScanner.ReportProgress(0, nodesToAdd.ToArray());
+                            }
+                            else
+                            {
+                                if (inLibrary.FileName != s.FileName)
+                                {
+                                    inLibrary.FileName = s.FileName;
+                                    db.Update(inLibrary);
+                                }
+                            }
                         }
 
                         // If the filename is too long
@@ -909,7 +953,10 @@ namespace JamBit
 
         private void libraryScanner_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            AddSongToLibrary(e.UserState as Song);
+            TreeNode[][] nodesToAdd = e.UserState as TreeNode[][];
+            foreach (TreeNode[] nodes in nodesToAdd) {
+                nodes[0].Nodes.Add(nodes[1]);
+            }
         }
 
         private void libraryScanner_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
