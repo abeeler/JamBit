@@ -102,7 +102,7 @@ namespace JamBit
         {
             public bool Equals(Song x, Song y)
             {
-                return x.Album == y.Album;
+                return x.Album.ToLower() == y.Album.ToLower();
             }
 
             public int GetHashCode(Song obj)
