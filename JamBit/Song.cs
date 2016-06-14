@@ -30,9 +30,9 @@ namespace JamBit
                 if (!File.Exists(value))
                     return;
                 Data = TagLib.File.Create(_fileName);
-                Title = Data.Tag.Title;
-                Artist = Data.Tag.FirstPerformer;
-                Album = Data.Tag.Album;
+                Title = Data.Tag.Title ?? "Unknown Track";
+                Artist = Data.Tag.FirstPerformer ?? "Unknown Artist";
+                Album = Data.Tag.Album ?? "Unknown Album";
             }
         }
 

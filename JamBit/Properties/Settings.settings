@@ -15,7 +15,7 @@
       <Value Profile="(Default)">50</Value>
     </Setting>
     <Setting Name="LastPlaylistIndex" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+      <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="LastPlayMode" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>

@@ -21,6 +21,7 @@ namespace JamBit
         #region Fields
 
         public SQLiteConnection db;
+        public int dbOperationsActive = 0;
 
         private Timer timeCheckTimer;
         private Timer playlistScrollTimer;
@@ -100,6 +101,9 @@ namespace JamBit
             db.CreateTable<PlaylistItem>();
             db.CreateTable<RecentSong>();
 
+            if (db.Find<Playlist>(1) == null)
+                Console.WriteLine(db.Insert(new Playlist()));
+
             // Create concurrent queue for folder scanning
             foldersToScan = new ConcurrentQueue<string>();
 
@@ -162,13 +166,7 @@ namespace JamBit
             treeLibrary.BeforeCollapse += treeLibrary_BeforeCollapse;
 
             // Load last playlist opened
-            if (Properties.Settings.Default.LastPlaylistIndex > 0)
-            {
-                currentPlaylist = db.Get<Playlist>(Properties.Settings.Default.LastPlaylistIndex);
-                lblPlaylistName.Text = currentPlaylist.Name;
-                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
-                    AddSongToPlaylist(pi.SongID);
-            }
+            LoadPlaylist(Properties.Settings.Default.LastPlaylistIndex);            
 
             // Load last play mode used
             SetPlayMode((RepeatMode)Properties.Settings.Default.LastPlayMode);
@@ -198,6 +196,8 @@ namespace JamBit
             // Clear the tree view initially
             treeLibrary.Nodes.Clear();
 
+            treeLibrary.BeginUpdate();
+
             //
             // Load the Library node, holding every song in the library
             //
@@ -212,7 +212,7 @@ namespace JamBit
                 // If this is the first song or the last song doesn't have the same artist, find the artist node in the tree or make one
                 if (artistNode == null || artistNode.Text != s.Artist)
                     artistNode = GetOrMakeNode(libraryNode, s.Artist, tn => tn.Text.ToLower() == s.Artist.ToLower());
-
+                
                 // If this is the first song or the last song doesn't have the same album, find the artist node in the tree or make one
                 if (albumNode == null || albumNode.Text != s.Album)
                     albumNode = GetOrMakeNode(artistNode, s.Album, tn => tn.Text.ToLower() == s.Album.ToLower());
@@ -250,10 +250,12 @@ namespace JamBit
             // Add a node to the tree for each playlist
             try
             {
-                foreach (Playlist p in db.Table<Playlist>())
+                foreach (Playlist p in db.Table<Playlist>().Where(playlist => playlist.ID > 1))
                     playlistsNode.Nodes.Add(new LibraryNode(LibraryNode.LibraryNodeType.Playlist, p.Name, p.ID));
             }
             catch (Exception) { }
+
+            treeLibrary.EndUpdate();
         }
 
         /// <summary>
@@ -408,12 +410,26 @@ namespace JamBit
         }
 
         /// <summary>
-        /// Adds a song to the playlist by ID
+        /// Adds multiple songs to the playlist and saves it
+        /// </summary>
+        /// <param name="ids"></param>
+        public void AddSongsToPlaylist(IEnumerable<int> ids, bool save = true)
+        {
+            foreach (int id in ids)
+                AddSongToPlaylist(db.Get<Song>(id));
+            if (save)
+                SavePlaylist();
+        }
+
+        /// <summary>
+        /// Adds a song to the playlist and saves it
         /// </summary>
         /// <param name="id"></param>
-        public void AddSongToPlaylist(int id)
+        public void AddSongToPlaylist(int id, bool save = true)
         {
             AddSongToPlaylist(db.Get<Song>(id));
+            if (save)
+                SavePlaylist();
         }
 
         /// <summary>
@@ -428,7 +444,6 @@ namespace JamBit
             lstPlaylist.Items.Add(new ListViewItem(new string[] {
                     s.Title, s.Artist, s.Album, s.PlayCount.ToString()
                 }));
-
         }
 
         /// <summary>
@@ -641,7 +656,7 @@ namespace JamBit
         public void SavePlaylist()
         {
             db.Update(currentPlaylist);
-            currentPlaylist.SaveToDatabase(db);
+            currentPlaylist.SaveToDatabase(this);
         }
 
         /// <summary>
@@ -655,7 +670,7 @@ namespace JamBit
             currentPlaylist.ID = 0;
             currentPlaylist.Name = name;
             CreatePlaylist(currentPlaylist);
-            currentPlaylist.SaveToDatabase(db);
+            currentPlaylist.SaveToDatabase(this);
             lblPlaylistName.Text = currentPlaylist.Name;
             Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
             Properties.Settings.Default.Save();
@@ -667,13 +682,9 @@ namespace JamBit
         public void ClearPlaylist()
         {
             MusicPlayer.CloseSong();
-            currentPlaylist = new Playlist();
             shuffledSongs.Clear();
             lblPlaylistName.Text = "";
             lstPlaylist.Items.Clear();
-            playlistIndex = -1;
-            Properties.Settings.Default.LastPlaylistIndex = 0;
-            Properties.Settings.Default.Save();
         }
 
         /// <summary>
@@ -683,10 +694,23 @@ namespace JamBit
         public void AddPlayableNodeSongs(LibraryNode playable)
         {
             if (playable.Nodes.Count == 0)
-                AddSongToPlaylist((int)playable.DatabaseKey);
+                AddSongToPlaylist((int)playable.DatabaseKey, false);
             else
                 foreach (LibraryNode child in playable.Nodes.Cast<LibraryNode>())
                     AddPlayableNodeSongs(child);
+        }
+
+        public void LoadDefaultPlaylist()
+        {
+            ClearPlaylist();
+
+            currentPlaylist = db.Get<Playlist>(1);
+            currentPlaylist.Songs.Clear();
+            SavePlaylist();
+
+            playlistIndex = -1;
+            Properties.Settings.Default.LastPlaylistIndex = 1;
+            Properties.Settings.Default.Save();
         }
 
         /// <summary>
@@ -703,8 +727,12 @@ namespace JamBit
                 lblPlaylistName.Text = currentPlaylist.Name;
                 Properties.Settings.Default.LastPlaylistIndex = currentPlaylist.ID;
                 Properties.Settings.Default.Save();
-                foreach (PlaylistItem pi in db.Table<PlaylistItem>().Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID))
-                    AddSongToPlaylist(pi.SongID);
+                
+                AddSongsToPlaylist(db.Table<PlaylistItem>()
+                    .Where<PlaylistItem>(pi => pi.PlaylistID == currentPlaylist.ID)
+                    .Select(pi => pi.SongID),
+                    false
+                );
             }
             catch (Exception) { }
         }
@@ -724,7 +752,7 @@ namespace JamBit
 
             // If the deleted playlist is the current one, delete it
             if (currentPlaylist.ID == id)
-                ClearPlaylist();
+                LoadDefaultPlaylist();
 
             // Remove the playlist node from the tree
             treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>().First<LibraryNode>(ln => (int)ln.DatabaseKey == id).Remove();
@@ -770,20 +798,23 @@ namespace JamBit
             }
         }
 
-        public void RemoveSongFromPlaylistByID(int id)
+        public void RemoveSongFromPlaylistByID(int id, bool save = true)
         {
             int index = currentPlaylist.Songs.IndexOf(id);
             if (index > -1)
-                RemoveSongFromPlaylist(index);
+                RemoveSongFromPlaylist(index, save);
         }
 
-        public void RemoveSongFromPlaylist(int index)
+        public void RemoveSongFromPlaylist(int index, bool save = true)
         {
             if (playlistIndex == index)
                 playlistIndex--;
             shuffledSongs.Remove(currentPlaylist.Songs[index]);
             currentPlaylist.Songs.RemoveAt(index);
             lstPlaylist.Items.RemoveAt(index);
+
+            if (save)
+                SavePlaylist();
         }
 
         #endregion
@@ -890,7 +921,10 @@ namespace JamBit
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             // Safely remove database connection from memory
-            db.Dispose();
+            if (dbOperationsActive > 0)
+                e.Cancel = true;
+            else
+                db.Dispose();
         }
 
         private void libraryScanner_DoWork(object sender, DoWorkEventArgs e)
@@ -1115,11 +1149,11 @@ namespace JamBit
 
         private void mnuPlaylistCreate_Click(object sender, EventArgs e) { CreatePlaylist(); }
 
-        private void mnuPlaylistSave_Click(object sender, EventArgs e) { SavePlaylist(); }
+        private void mnuPlaylistSave_Click(object sender, EventArgs e) { if (currentPlaylist.ID > 1) SavePlaylist(); else SaveAsNewPlaylist(); }
 
         private void mnuPlaylistSaveAs_Click(object sender, EventArgs e) { SaveAsNewPlaylist(); }
 
-        private void mnuPlaylistClear_Click(object sender, EventArgs e) { ClearPlaylist(); }
+        private void mnuPlaylistClear_Click(object sender, EventArgs e) { LoadDefaultPlaylist(); }
 
         #endregion
 
@@ -1128,18 +1162,23 @@ namespace JamBit
         private void libraryOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
         {
             if (e.ClickedItem == playableOptions.Items[0])
+            {
                 foreach (TreeNode node in treeLibrary.SelectedNodes)
                     AddPlayableNodeSongs(node as LibraryNode);
+                SavePlaylist();
+            }
         }
 
         private void currentPlaylistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
         {
             // Iterate from the last selection to the first to prevent changes in indices during removal
             if (e.ClickedItem == currentPlaylistOptions.Items[0])
+            {
                 for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
-                {
-                    RemoveSongFromPlaylist(lstPlaylist.SelectedIndices[i]);
-                }                    
+                    RemoveSongFromPlaylist(lstPlaylist.SelectedIndices[i], false);
+                    
+                SavePlaylist();
+            }
         }
 
         private void playlistOptions_ItemClick(object sender, ToolStripItemClickedEventArgs e)
@@ -1191,6 +1230,7 @@ namespace JamBit
             {
                 case LibraryNode.LibraryNodeType.Playable:
                     AddPlayableNodeSongs(node);
+                    SavePlaylist();
                     break;
                 case LibraryNode.LibraryNodeType.Playlist:
                     LoadPlaylist((int)node.DatabaseKey);
