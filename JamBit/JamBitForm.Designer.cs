@@ -60,6 +60,7 @@
             this.mnuPlaylistCreate = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistSave = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistSaveAs = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuPlaylistRename = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistClear = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.btnPlayMode = new System.Windows.Forms.Button();
@@ -69,7 +70,6 @@
             this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
             this.label1 = new System.Windows.Forms.Label();
             this.lblPlaylistName = new System.Windows.Forms.Label();
-            this.mnuPlaylistRename = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -351,6 +351,13 @@
             this.mnuPlaylistSaveAs.Text = "Save Current Playlist As";
             this.mnuPlaylistSaveAs.Click += new System.EventHandler(this.mnuPlaylistSaveAs_Click);
             // 
+            // mnuPlaylistRename
+            // 
+            this.mnuPlaylistRename.Name = "mnuPlaylistRename";
+            this.mnuPlaylistRename.Size = new System.Drawing.Size(200, 22);
+            this.mnuPlaylistRename.Text = "Rename Current Playlist";
+            this.mnuPlaylistRename.Click += new System.EventHandler(this.mnuPlaylistRename_Click);
+            // 
             // mnuPlaylistClear
             // 
             this.mnuPlaylistClear.Name = "mnuPlaylistClear";
@@ -379,9 +386,9 @@
             // 
             this.treeLibrary.HideSelection = false;
             this.treeLibrary.LastSelectedNode = null;
-            this.treeLibrary.Location = new System.Drawing.Point(419, 39);
+            this.treeLibrary.Location = new System.Drawing.Point(419, 24);
             this.treeLibrary.Name = "treeLibrary";
-            this.treeLibrary.Size = new System.Drawing.Size(342, 361);
+            this.treeLibrary.Size = new System.Drawing.Size(342, 376);
             this.treeLibrary.TabIndex = 17;
             // 
             // lblSongInformation
@@ -395,7 +402,7 @@
             this.lblSongInformation.Margin = new System.Windows.Forms.Padding(0);
             this.lblSongInformation.Name = "lblSongInformation";
             this.lblSongInformation.PauseLength = 2500;
-            this.lblSongInformation.Size = new System.Drawing.Size(749, 12);
+            this.lblSongInformation.Size = new System.Drawing.Size(401, 12);
             this.lblSongInformation.TabIndex = 9;
             // 
             // prgVolume
@@ -436,13 +443,6 @@
             this.lblPlaylistName.Name = "lblPlaylistName";
             this.lblPlaylistName.Size = new System.Drawing.Size(0, 13);
             this.lblPlaylistName.TabIndex = 19;
-            // 
-            // mnuPlaylistRename
-            // 
-            this.mnuPlaylistRename.Name = "mnuPlaylistRename";
-            this.mnuPlaylistRename.Size = new System.Drawing.Size(200, 22);
-            this.mnuPlaylistRename.Text = "Rename Current Playlist";
-            this.mnuPlaylistRename.Click += new System.EventHandler(this.mnuPlaylistRename_Click);
             // 
             // JamBitForm
             // 
