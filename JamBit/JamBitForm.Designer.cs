@@ -61,6 +61,7 @@
             this.mnuPlaylistSave = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistSaveAs = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistClear = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuPlaylistDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.btnPlayMode = new System.Windows.Forms.Button();
             this.treeLibrary = new MusicPlayerControlsLibrary.MultipleSelectTreeView();
             this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
@@ -68,6 +69,7 @@
             this.prgSongTime = new MusicPlayerControlsLibrary.SlidableProgressBar();
             this.label1 = new System.Windows.Forms.Label();
             this.lblPlaylistName = new System.Windows.Forms.Label();
+            this.mnuPlaylistRename = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -94,7 +96,7 @@
             // 
             // btnPlay
             // 
-            this.btnPlay.Location = new System.Drawing.Point(12, 68);
+            this.btnPlay.Location = new System.Drawing.Point(15, 68);
             this.btnPlay.Name = "btnPlay";
             this.btnPlay.Size = new System.Drawing.Size(75, 23);
             this.btnPlay.TabIndex = 7;
@@ -302,7 +304,9 @@
             this.mnuPlaylistCreate,
             this.mnuPlaylistSave,
             this.mnuPlaylistSaveAs,
-            this.mnuPlaylistClear});
+            this.mnuPlaylistRename,
+            this.mnuPlaylistClear,
+            this.mnuPlaylistDelete});
             this.playlistToolStripMenuItem.Name = "playlistToolStripMenuItem";
             this.playlistToolStripMenuItem.Size = new System.Drawing.Size(56, 20);
             this.playlistToolStripMenuItem.Text = "Playlist";
@@ -310,49 +314,56 @@
             // mnuPlaylistNext
             // 
             this.mnuPlaylistNext.Name = "mnuPlaylistNext";
-            this.mnuPlaylistNext.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistNext.Size = new System.Drawing.Size(200, 22);
             this.mnuPlaylistNext.Text = "Next Song";
             this.mnuPlaylistNext.Click += new System.EventHandler(this.mnuPlaylistNext_Click);
             // 
             // mnuPlaylistPrevious
             // 
             this.mnuPlaylistPrevious.Name = "mnuPlaylistPrevious";
-            this.mnuPlaylistPrevious.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistPrevious.Size = new System.Drawing.Size(200, 22);
             this.mnuPlaylistPrevious.Text = "Previous Song";
             this.mnuPlaylistPrevious.Click += new System.EventHandler(this.mnuPlaylistPrevious_Click);
             // 
             // gToolStripMenuItem
             // 
             this.gToolStripMenuItem.Name = "gToolStripMenuItem";
-            this.gToolStripMenuItem.Size = new System.Drawing.Size(194, 6);
+            this.gToolStripMenuItem.Size = new System.Drawing.Size(197, 6);
             // 
             // mnuPlaylistCreate
             // 
             this.mnuPlaylistCreate.Name = "mnuPlaylistCreate";
-            this.mnuPlaylistCreate.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistCreate.Size = new System.Drawing.Size(200, 22);
             this.mnuPlaylistCreate.Text = "Create New Playlist";
             this.mnuPlaylistCreate.Click += new System.EventHandler(this.mnuPlaylistCreate_Click);
             // 
             // mnuPlaylistSave
             // 
             this.mnuPlaylistSave.Name = "mnuPlaylistSave";
-            this.mnuPlaylistSave.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistSave.Size = new System.Drawing.Size(200, 22);
             this.mnuPlaylistSave.Text = "Save Current Playlist";
             this.mnuPlaylistSave.Click += new System.EventHandler(this.mnuPlaylistSave_Click);
             // 
             // mnuPlaylistSaveAs
             // 
             this.mnuPlaylistSaveAs.Name = "mnuPlaylistSaveAs";
-            this.mnuPlaylistSaveAs.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistSaveAs.Size = new System.Drawing.Size(200, 22);
             this.mnuPlaylistSaveAs.Text = "Save Current Playlist As";
             this.mnuPlaylistSaveAs.Click += new System.EventHandler(this.mnuPlaylistSaveAs_Click);
             // 
             // mnuPlaylistClear
             // 
             this.mnuPlaylistClear.Name = "mnuPlaylistClear";
-            this.mnuPlaylistClear.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistClear.Size = new System.Drawing.Size(200, 22);
             this.mnuPlaylistClear.Text = "Clear Current Playlist";
             this.mnuPlaylistClear.Click += new System.EventHandler(this.mnuPlaylistClear_Click);
+            // 
+            // mnuPlaylistDelete
+            // 
+            this.mnuPlaylistDelete.Name = "mnuPlaylistDelete";
+            this.mnuPlaylistDelete.Size = new System.Drawing.Size(200, 22);
+            this.mnuPlaylistDelete.Text = "Delete Current Playlist";
+            this.mnuPlaylistDelete.Click += new System.EventHandler(this.mnuPlaylistDelete_Click);
             // 
             // btnPlayMode
             // 
@@ -425,6 +436,13 @@
             this.lblPlaylistName.Name = "lblPlaylistName";
             this.lblPlaylistName.Size = new System.Drawing.Size(0, 13);
             this.lblPlaylistName.TabIndex = 19;
+            // 
+            // mnuPlaylistRename
+            // 
+            this.mnuPlaylistRename.Name = "mnuPlaylistRename";
+            this.mnuPlaylistRename.Size = new System.Drawing.Size(200, 22);
+            this.mnuPlaylistRename.Text = "Rename Current Playlist";
+            this.mnuPlaylistRename.Click += new System.EventHandler(this.mnuPlaylistRename_Click);
             // 
             // JamBitForm
             // 
@@ -499,6 +517,8 @@
         private System.Windows.Forms.ToolStripMenuItem mnuPlayModeRepeat;
         private System.Windows.Forms.ToolStripMenuItem mnuPlayModeShuffle;
         private System.Windows.Forms.ToolStripMenuItem mnuPlayModeNone;
+        private System.Windows.Forms.ToolStripMenuItem mnuPlaylistDelete;
+        private System.Windows.Forms.ToolStripMenuItem mnuPlaylistRename;
     }
 }
 

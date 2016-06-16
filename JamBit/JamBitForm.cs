@@ -135,6 +135,7 @@ namespace JamBit
             // Initialize the playlist options context menu
             playlistOptions = new ContextMenuStrip();
             playlistOptions.Items.Add("Load playlist");
+            playlistOptions.Items.Add("Rename playlist");
             playlistOptions.Items.Add("Delete playlist");
             playlistOptions.ItemClicked += playlistOptions_ItemClick;
 
@@ -415,10 +416,12 @@ namespace JamBit
         /// <param name="ids"></param>
         public void AddSongsToPlaylist(IEnumerable<int> ids, bool save = true)
         {
+            lstPlaylist.BeginUpdate();
             foreach (int id in ids)
                 AddSongToPlaylist(db.Get<Song>(id));
             if (save)
                 SavePlaylist();
+            lstPlaylist.EndUpdate();
         }
 
         /// <summary>
@@ -677,6 +680,27 @@ namespace JamBit
         }
 
         /// <summary>
+        /// Rename a playlist
+        /// </summary>
+        /// <param name="playlistID"></param>
+        public void RenamePlaylist(int playlistID)
+        {
+            string newName = null;
+            if (!MusicPlayerControlsLibrary.Prompt.ShowDialog("Enter new name for playlist", "Rename Playlist", out newName))
+                return;
+
+            Playlist toRename = playlistID == currentPlaylist.ID ? currentPlaylist : db.Get<Playlist>(playlistID);
+            toRename.Name = newName;
+            db.Update(toRename);
+            treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>()
+                .First(ln => (int)ln.DatabaseKey == playlistID).Text = newName;
+
+            if (playlistID == currentPlaylist.ID)
+                lblPlaylistName.Text = newName;
+        }
+        public void RenamePlaylist() { RenamePlaylist(currentPlaylist.ID); }
+
+        /// <summary>
         /// Clear the current playlist
         /// </summary>
         public void ClearPlaylist()
@@ -757,6 +781,7 @@ namespace JamBit
             // Remove the playlist node from the tree
             treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>().First<LibraryNode>(ln => (int)ln.DatabaseKey == id).Remove();
         }
+        public void DeletePlaylist() { DeletePlaylist(currentPlaylist.ID); }
         
         /// <summary>
         /// Determine how many items in the playlist are viewable
@@ -1155,6 +1180,10 @@ namespace JamBit
 
         private void mnuPlaylistClear_Click(object sender, EventArgs e) { LoadDefaultPlaylist(); }
 
+        private void mnuPlaylistDelete_Click(object sender, EventArgs e) { DeletePlaylist(); }
+
+        private void mnuPlaylistRename_Click(object sender, EventArgs e) { RenamePlaylist(); }
+
         #endregion
 
         #region Context Menu Event Methods
@@ -1174,9 +1203,12 @@ namespace JamBit
             // Iterate from the last selection to the first to prevent changes in indices during removal
             if (e.ClickedItem == currentPlaylistOptions.Items[0])
             {
+                lstPlaylist.BeginUpdate();
+
                 for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
                     RemoveSongFromPlaylist(lstPlaylist.SelectedIndices[i], false);
-                    
+                lstPlaylist.EndUpdate();
+
                 SavePlaylist();
             }
         }
@@ -1185,6 +1217,8 @@ namespace JamBit
         {
             if (e.ClickedItem == playlistOptions.Items[0])
                 LoadPlaylist((int)playlistRightClicked.DatabaseKey);
+            else if (e.ClickedItem == playlistOptions.Items[1])
+                RenamePlaylist((int)playlistRightClicked.DatabaseKey);
             else
                 DeletePlaylist((int)playlistRightClicked.DatabaseKey);
         }
@@ -1258,6 +1292,7 @@ namespace JamBit
                 lastMouseDown = DateTime.Now;
             }
         }
+
 
         #endregion
 
