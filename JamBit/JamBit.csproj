@@ -60,6 +60,12 @@
     <Compile Include="JamBitForm.Designer.cs">
       <DependentUpon>JamBitForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="JamBitFormControlEvents.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="JamBitFormLibraryTree.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="LibraryNode.cs" />
     <Compile Include="MusicPlayer.cs" />
     <Compile Include="OptionsForm.cs">
