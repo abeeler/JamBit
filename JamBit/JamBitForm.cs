@@ -415,10 +415,12 @@ namespace JamBit
         /// <param name="ids"></param>
         public void AddSongsToPlaylist(IEnumerable<int> ids, bool save = true)
         {
+            lstPlaylist.BeginUpdate();
             foreach (int id in ids)
                 AddSongToPlaylist(db.Get<Song>(id));
             if (save)
                 SavePlaylist();
+            lstPlaylist.EndUpdate();
         }
 
         /// <summary>
@@ -757,6 +759,7 @@ namespace JamBit
             // Remove the playlist node from the tree
             treeLibrary.Nodes[2].Nodes.Cast<LibraryNode>().First<LibraryNode>(ln => (int)ln.DatabaseKey == id).Remove();
         }
+        public void DeletePlaylist() { DeletePlaylist(currentPlaylist.ID); }
         
         /// <summary>
         /// Determine how many items in the playlist are viewable
@@ -1155,6 +1158,8 @@ namespace JamBit
 
         private void mnuPlaylistClear_Click(object sender, EventArgs e) { LoadDefaultPlaylist(); }
 
+        private void mnuPlaylistDelete_Click(object sender, EventArgs e) { DeletePlaylist(); }
+
         #endregion
 
         #region Context Menu Event Methods
@@ -1174,9 +1179,11 @@ namespace JamBit
             // Iterate from the last selection to the first to prevent changes in indices during removal
             if (e.ClickedItem == currentPlaylistOptions.Items[0])
             {
+                lstPlaylist.BeginUpdate();
                 for (int i = lstPlaylist.SelectedIndices.Count - 1; i >= 0; i--)
                     RemoveSongFromPlaylist(lstPlaylist.SelectedIndices[i], false);
-                    
+                lstPlaylist.EndUpdate();
+
                 SavePlaylist();
             }
         }
@@ -1262,5 +1269,7 @@ namespace JamBit
         #endregion
 
         #endregion
+
+        
     }
 }

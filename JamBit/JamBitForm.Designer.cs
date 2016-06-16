@@ -61,6 +61,7 @@
             this.mnuPlaylistSave = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistSaveAs = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPlaylistClear = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuPlaylistDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.btnPlayMode = new System.Windows.Forms.Button();
             this.treeLibrary = new MusicPlayerControlsLibrary.MultipleSelectTreeView();
             this.lblSongInformation = new MusicPlayerControlsLibrary.MarqueeLabel();
@@ -302,7 +303,8 @@
             this.mnuPlaylistCreate,
             this.mnuPlaylistSave,
             this.mnuPlaylistSaveAs,
-            this.mnuPlaylistClear});
+            this.mnuPlaylistClear,
+            this.mnuPlaylistDelete});
             this.playlistToolStripMenuItem.Name = "playlistToolStripMenuItem";
             this.playlistToolStripMenuItem.Size = new System.Drawing.Size(56, 20);
             this.playlistToolStripMenuItem.Text = "Playlist";
@@ -353,6 +355,13 @@
             this.mnuPlaylistClear.Size = new System.Drawing.Size(197, 22);
             this.mnuPlaylistClear.Text = "Clear Current Playlist";
             this.mnuPlaylistClear.Click += new System.EventHandler(this.mnuPlaylistClear_Click);
+            // 
+            // mnuPlaylistDelete
+            // 
+            this.mnuPlaylistDelete.Name = "mnuPlaylistDelete";
+            this.mnuPlaylistDelete.Size = new System.Drawing.Size(197, 22);
+            this.mnuPlaylistDelete.Text = "Delete Current Playlist";
+            this.mnuPlaylistDelete.Click += new System.EventHandler(this.mnuPlaylistDelete_Click);
             // 
             // btnPlayMode
             // 
@@ -499,6 +508,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuPlayModeRepeat;
         private System.Windows.Forms.ToolStripMenuItem mnuPlayModeShuffle;
         private System.Windows.Forms.ToolStripMenuItem mnuPlayModeNone;
+        private System.Windows.Forms.ToolStripMenuItem mnuPlaylistDelete;
     }
 }
 

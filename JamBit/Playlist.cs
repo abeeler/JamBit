@@ -32,10 +32,9 @@ namespace JamBit
         /// <param name="db">The database to save to</param>
         public void SaveToDatabase(JamBitForm form)
         {
-            int test = 0;
             BackgroundWorker bw = new BackgroundWorker();
             bw.DoWork += SaveToPlaylistBackgroundWork;
-            bw.RunWorkerAsync(form);                
+            bw.RunWorkerAsync(form);
         }
 
         private void SaveToPlaylistBackgroundWork(object sender, DoWorkEventArgs e)
@@ -60,7 +59,7 @@ namespace JamBit
                     PlaylistItem toDelete = db.Get<PlaylistItem>(pi => pi.PlaylistID == ID && pi.SongID == id);
                     db.Delete(toDelete);
                 }
-            } catch (InvalidOperationException exc) { }
+            } catch (InvalidOperationException) { }
 
             Interlocked.Decrement(ref form.dbOperationsActive);
         }
